@@ -16,5 +16,31 @@ services:
       timeout: 10s
       retries: 5
 
+  backend:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile.backend
+    container_name: taskforge-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../apps/backend/.env
+    depends_on:
+      - mongodb
+    volumes:
+      - ../../apps/backend/app:/app/app
+
+  frontend:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile.frontend
+    container_name: taskforge-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../../apps/frontend/.env
+    volumes:
+      - ../../apps/frontend:/app
+
 volumes:
   dbdata:
