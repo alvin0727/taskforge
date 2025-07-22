@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: taskforge-mongo
+    restart: always
+    ports:
+      - '27017:27017'
+    volumes:
+      - dbdata:/data/db
+    command: mongod --quiet --logpath /dev/null
+    healthcheck:
+      test: ["CMD", "printf", \"GET / HTTP/1.1\\n\\n\" > /dev/tcp/127.0.0.1/27017"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  dbdata:

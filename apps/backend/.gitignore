@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environments
+.env/
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# FastAPI specific
+instance/
+*.db
+*.sqlite3
+
+# VS Code
+.vscode/
+
+# Pytest
+.cache/
+.pytest_cache/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+*.swp
+
+# Migrations
+migrations/
