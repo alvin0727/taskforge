@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 from bson import ObjectId
 
@@ -13,7 +13,15 @@ class Task(BaseModel):
     title: str
     description: Optional[str] = None
     status: str = Field(default="todo")  # todo | in-progress | done
+    is_completed: bool = Field(default=False)
     dependencies: List[str] = Field(default_factory=list)
+    children: List["Task"] = Field(default_factory=list)  # nested task support
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            ObjectId: str
+        }
 
 
 class Workflow(BaseModel):
@@ -21,7 +29,7 @@ class Workflow(BaseModel):
     title: str
     prompt: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str  # user_id (must be a valid user ID)
+    created_by: str  # user_id
     tasks: List[Task]
 
     class Config:
@@ -30,3 +38,7 @@ class Workflow(BaseModel):
         json_encoders = {
             ObjectId: str
         }
+
+
+# Required for self-referencing model Task -> children: List[Task]
+Task.update_forward_refs()
