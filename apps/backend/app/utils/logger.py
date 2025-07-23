@@ -1,7 +1,7 @@
 import logging
 import os
 
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_FORMAT = "[%(asctime)s] %(levelname)s | %(name)s | %(module)s:%(lineno)d | %(message)s"
 LOG_DIR = "logs"
 LOG_FILE = os.path.join(LOG_DIR, "app.log")
 

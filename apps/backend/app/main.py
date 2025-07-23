@@ -1,7 +1,8 @@
-from app.db.database import get_db
 from fastapi import FastAPI
+from app.db.database import get_db
 from app.utils.logger import logger
 from app.api import router as api_router
+import logging
 
 app = FastAPI()
 
@@ -16,7 +17,7 @@ async def startup_db_check():
 
 @app.get("/")
 def read_root():
-    logger.info("Root endpoint accessed")
+    logging.info("Root endpoint accessed")
     return {"message": "Hello from FastAPI!"}
 
 app.include_router(api_router)
