@@ -9,7 +9,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 logger = logging.getLogger("taskforge-backend")
 logger.setLevel(logging.INFO)
-logger.propagate = True  
+logger.propagate = False
 
 # File handler
 file_handler = logging.FileHandler(LOG_FILE)
