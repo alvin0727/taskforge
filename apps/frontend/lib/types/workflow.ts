@@ -1,20 +1,27 @@
-export type TaskStatus = 'todo' | 'in_progress' | 'done';
-
-export type Task = {
+export interface Task {
   id: string;
   title: string;
   description: string;
   status: TaskStatus;
   is_completed: boolean;
-  children: Task[]; 
-};
+  children?: Task[];
+}
 
-export type Workflow = {
-  id: string;              
-  title: string;            
-  description: string;    
-  tasks: Task[];           
+export interface Workflow {
+  id: string;
   user_id: string;
   prompt: string;
+  title: string;
+  description: string;
   created_at: string;
-};
+  tasks: Task[];
+}
+
+export type TaskStatus =
+  | 'backlog'
+  | 'todo'
+  | 'in_progress'
+  | 'blocked'
+  | 'review'
+  | 'done'
+  | 'canceled';

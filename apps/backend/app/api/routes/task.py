@@ -1,0 +1,35 @@
+from fastapi import APIRouter, Body, HTTPException
+from typing import List, Dict
+from app.utils.logger import logger
+import app.services.task_service as task_service
+from bson import ObjectId
+from pydantic import BaseModel
+
+class StatusUpdateRequest(BaseModel):
+    new_status: str
+
+router = APIRouter()
+
+router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+@router.patch("/{workflow_id}/parent/{task_id}/status")
+async def update_parent_task_status(
+    workflow_id: str,
+    task_id: str,
+    body: StatusUpdateRequest
+):
+    new_status = body.new_status
+    try:
+        result = await task_service.update_parent_task_status(workflow_id, task_id, new_status)
+        if result:
+            logger.info(f"Updated task {task_id} status to {new_status} in workflow {workflow_id}")
+            return {"message": "Parent task status updated successfully"}
+        else:
+            logger.warning(f"Task {task_id} not found in workflow {workflow_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+    except ValueError as e:
+        logger.warning(f"Validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating parent task status: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")

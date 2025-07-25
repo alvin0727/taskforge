@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime
 from bson import ObjectId
+from app.utils.const_value import TaskStatus
 
 
 def generate_id():
@@ -12,9 +13,10 @@ class Task(BaseModel):
     id: str = Field(default_factory=generate_id)
     title: str
     description: Optional[str] = None
-    status: str = Field(default="todo")  # todo | in-progress | done
+    status: TaskStatus = Field(default=TaskStatus.TODO)
     is_completed: bool = Field(default=False)
     dependencies: List[str] = Field(default_factory=list)
+    order: int = Field(default=0)  
     children: List["Task"] = Field(default_factory=list)  # nested task support
 
     class Config:
