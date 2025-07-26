@@ -201,7 +201,7 @@ export default function TaskBoard() {
     >
       <div
         ref={gridRef}
-        className="grid grid-flow-col auto-cols-[280px] sm:auto-cols-[340px] md:auto-cols-[400px] gap-4 mx-8 h-[calc(100vh-64px)] overflow-x-auto pb-2 mt-12 rounded-md select-none"
+        className="grid grid-flow-col auto-cols-[320px] sm:auto-cols-[340px] md:auto-cols-[360px] gap-4 mx-8 h-[calc(100vh-64px)] overflow-x-auto pb-2 mt-12 rounded-md select-none"
         onMouseDown={handleMouseDown}
         style={{
           cursor: isScrolling ? 'grabbing' : 'grab',
