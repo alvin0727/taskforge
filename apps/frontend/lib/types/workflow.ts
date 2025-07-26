@@ -1,10 +1,12 @@
 export interface Task {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   status: TaskStatus;
   is_completed: boolean;
-  children?: Task[];
+  dependencies: string[];
+  order: number;
+  parent_id?: string | null;
 }
 
 export interface Workflow {

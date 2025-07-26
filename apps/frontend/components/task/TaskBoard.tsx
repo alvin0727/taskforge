@@ -1,12 +1,18 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { DndContext, useDroppable, closestCenter, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import {
+  DndContext,
+  useDroppable, closestCenter, DragEndEvent, DragStartEvent, DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
 import { toast } from 'react-hot-toast';
 import { useTaskStore } from '@/stores/taskStore';
 import { TaskStatus } from '@/lib/types/workflow';
 import TaskCard from './TaskCard';
-import { flattenTasks } from '@/utils/flattenTasks';
 import { updateTaskStatusInTree } from '@/utils/updateTaskTree';
 import taskService from '@/services/workflow/taskService';
 
@@ -42,6 +48,22 @@ export default function TaskBoard() {
   const [activeTask, setActiveTask] = useState<any>(null);
   const [isTaskDragging, setIsTaskDragging] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      delay: 100,
+      tolerance: 5,
+    },
+  });
+
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 100,
+      tolerance: 5,
+    },
+  });
+
+  const sensors = useSensors(mouseSensor, touchSensor);
 
   // Simplified drag-to-scroll state
   const [isScrolling, setIsScrolling] = useState(false);
@@ -116,7 +138,8 @@ export default function TaskBoard() {
 
   if (!workflow) return <p>Loading board...</p>;
 
-  const flatTasks = flattenTasks(workflow.tasks);
+  // Only show root (parent) tasks in the board
+  const parentTasks = workflow.tasks.filter(task => !task.parent_id);
 
   const handleDragStart = (e: DragStartEvent) => {
     setActiveId(String(e.active.id));
@@ -131,7 +154,7 @@ export default function TaskBoard() {
     }
 
     // Find active task for overlay
-    const task = flatTasks.find(t => t.id === String(e.active.id));
+    const task = parentTasks.find((t: any) => t.id === String(e.active.id));
     setActiveTask(task);
   };
 
@@ -170,6 +193,7 @@ export default function TaskBoard() {
 
   return (
     <DndContext
+      sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
       onDragStart={handleDragStart}
@@ -180,19 +204,18 @@ export default function TaskBoard() {
         className="grid grid-flow-col auto-cols-[280px] sm:auto-cols-[340px] md:auto-cols-[400px] gap-4 mx-8 h-[calc(100vh-64px)] overflow-x-auto pb-2 mt-12 rounded-md select-none"
         onMouseDown={handleMouseDown}
         style={{
-          cursor: isTaskDragging ? 'default' : (isScrolling ? 'grabbing' : 'grab'),
+          cursor: isScrolling ? 'grabbing' : 'grab',
           scrollbarWidth: 'thin',
-          pointerEvents: isScrolling ? 'none' : 'auto'
         }}
       >
         {statuses.map(({ key }) => (
           <DroppableColumn key={key} status={key}>
-            {flatTasks
-              .filter((task) => task.level === 0 && task.status === key)
+            {parentTasks
+              .filter((task) => task.status === key)
               .filter((task) => task.id !== activeId)
               .map((task) => (
                 <div key={task.id} data-task-card>
-                  <TaskCard task={task} level={task.level} />
+                  <TaskCard task={task} />
                 </div>
               ))}
           </DroppableColumn>

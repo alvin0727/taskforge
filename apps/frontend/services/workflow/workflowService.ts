@@ -11,10 +11,12 @@ export async function getWorkflowById(id: string): Promise<Workflow> {
   const normalizeTask = (task: any): Task => ({
     id: task.id,
     title: task.title,
-    description: task.description || '',
+    description: task.description,
     status: task.status || 'todo',
     is_completed: task.is_completed ?? false,
-    children: (task.children || []).map(normalizeTask),
+    dependencies: task.dependencies || [],
+    order: typeof task.order === 'number' ? task.order : 0,
+    parent_id: task.parent_id ?? null,
   });
 
   return {
