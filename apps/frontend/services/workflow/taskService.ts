@@ -1,4 +1,10 @@
 import taskAdapter from "@/adapters/api/taskAdapter";
+import { Task } from "@/lib/types/workflow";
+
+async function fetchTaskById(id: string): Promise<Task> {
+    const res = await taskAdapter.fetchTaskById(id);
+    return res;
+}
 
 async function updateTaskStatusParent(
     workflowId: string,
@@ -10,5 +16,6 @@ async function updateTaskStatusParent(
 }
 
 export default {
+    fetchTaskById,
     updateTaskStatusParent,
 }

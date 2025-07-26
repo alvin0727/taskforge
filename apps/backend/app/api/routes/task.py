@@ -21,12 +21,25 @@ async def update_parent_task_status(
     new_status = body.new_status
     try:
         result = await task_service.update_parent_task_status(workflow_id, task_id, new_status)
-        if result:
-            logger.info(f"Updated task {task_id} status to {new_status} in workflow {workflow_id}")
-            return {"message": "Parent task status updated successfully"}
+        # result can be either a success message or an object with matched_count
+        # if result is an int, it means modified_count
+        if hasattr(result, 'matched_count'):
+            if result.matched_count > 0:
+                logger.info(f"Updated task {task_id} status to {new_status} in workflow {workflow_id}")
+                return {"message": "Parent task status updated successfully"}
+            else:
+                logger.warning(f"Task {task_id} not found in workflow {workflow_id}")
+                raise HTTPException(status_code=404, detail="Task not found")
         else:
-            logger.warning(f"Task {task_id} not found in workflow {workflow_id}")
-            raise HTTPException(status_code=404, detail="Task not found")
+            # fallback: if result is an int, it means modified_count
+            if result:
+                logger.info(f"Updated task {task_id} status to {new_status} in workflow {workflow_id}")
+                return {"message": "Parent task status updated successfully"}
+            else:
+                # modified_count = 0, could mean no change
+                # Assume success (idempotent)
+                logger.info(f"No changes made to task {task_id} in workflow {workflow_id} (status may be the same)")
+                return {"message": "Parent task status updated successfully (no changes)"}
     except ValueError as e:
         logger.warning(f"Validation error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
