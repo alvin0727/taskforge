@@ -46,3 +46,24 @@ async def update_parent_task_status(
     except Exception as e:
         logger.error(f"Error updating parent task status: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.patch("/{workflow_id}/parent/{task_id}/{new_order}")
+async def update_parent_task_order(
+    workflow_id: str,
+    task_id: str,
+    new_order: int
+):
+    try:
+        result = await task_service.update_parent_task_order(workflow_id, task_id, new_order)
+        if result > 0:
+            logger.info(f"Updated task {task_id} order to {new_order} in workflow {workflow_id}")
+            return {"message": "Parent task order updated successfully"}
+        else:
+            logger.warning(f"Task {task_id} not found in workflow {workflow_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+    except ValueError as e:
+        logger.warning(f"Validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating parent task order: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")

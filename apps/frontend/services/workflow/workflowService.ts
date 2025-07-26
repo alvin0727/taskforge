@@ -9,7 +9,7 @@ export async function getWorkflowById(id: string): Promise<Workflow> {
   }
 
   const normalizeTask = (task: any): Task => ({
-    id: task.id,
+    id: task._id,
     title: task.title,
     description: task.description,
     status: task.status || 'todo',

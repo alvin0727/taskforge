@@ -20,7 +20,6 @@ const statuses: { key: TaskStatus; label: string }[] = [
   { key: 'backlog', label: 'Backlog' },
   { key: 'todo', label: 'To Do' },
   { key: 'in_progress', label: 'In Progress' },
-  { key: 'blocked', label: 'Blocked' },
   { key: 'review', label: 'Review' },
   { key: 'done', label: 'Done' },
   { key: 'canceled', label: 'Canceled' },

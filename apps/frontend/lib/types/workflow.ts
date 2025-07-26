@@ -23,7 +23,6 @@ export type TaskStatus =
   | 'backlog'
   | 'todo'
   | 'in_progress'
-  | 'blocked'
   | 'review'
   | 'done'
   | 'canceled';

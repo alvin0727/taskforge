@@ -18,10 +18,9 @@ async def generate_workflow(
     Generate a workflow based on the provided prompt and save to DB.
     """
     try:
-        tasks = generate_tasks_from_prompt(prompt)
-        workflow_id = await workflow_service.save_workflow_to_db(user_id, prompt, tasks)
+        workflow_id = await workflow_service.save_workflow_to_db(user_id, prompt)
         logger.info("Generated and saved workflow successfully")
-        return {"workflow_id": workflow_id, "tasks": tasks}
+        return {"workflow_id": workflow_id}
     except Exception as e:
         logger.error(f"Error generating workflow: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

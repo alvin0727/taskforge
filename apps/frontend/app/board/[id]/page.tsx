@@ -10,12 +10,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const { id } = use(params);
   const setWorkflow = useTaskStore((s) => s.setWorkflow);
 
-
   useEffect(() => {
     if (!id) return;
     getWorkflowById(id)
       .then((workflow) => {
-        setWorkflow(workflow)
+        setWorkflow(workflow);
       })
       .catch((err) => {
         console.error('Failed to fetch workflow', err);
