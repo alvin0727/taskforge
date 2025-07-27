@@ -1,13 +1,13 @@
-
 'use client';
 
-import { useEffect, use } from 'react';
+import { useEffect } from 'react';
 import { useTaskStore } from '@/stores/taskStore';
 import { getWorkflowById } from '@/services/workflow/workflowService';
 import TaskBoard from '@/components/task/TaskBoard';
+import React from 'react';
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  const { id } = React.use(params);
   const setWorkflow = useTaskStore((s) => s.setWorkflow);
 
   useEffect(() => {
