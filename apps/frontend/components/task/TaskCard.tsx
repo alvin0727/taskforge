@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { UserCircle, Timer } from 'lucide-react';
 import { Task } from '@/lib/types/workflow';
 import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { useRouter } from 'next/navigation';
 
 interface Props {
@@ -38,9 +39,7 @@ function TaskCard({ task, level = 0 }: Props) {
           : 'shadow hover:shadow-md transition-all duration-200 cursor-grab hover:cursor-grab'
         }`}
       style={{
-        transform: transform
-          ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-          : undefined,
+        transform: CSS.Transform.toString(transform),
         marginLeft: `${level * 12}px`,
       }}
     >

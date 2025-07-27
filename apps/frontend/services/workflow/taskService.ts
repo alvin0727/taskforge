@@ -18,9 +18,10 @@ async function updateTaskStatusParent(
 async function updateTaskOrderParent(
     workflowId: string,
     taskId: string,
-    order: number
+    from_order: number,
+    to_order: number
 ): Promise<any> {
-    const res = await taskAdapter.updateParentTaskOrder(workflowId, taskId, order);
+    const res = await taskAdapter.updateParentTaskOrder(workflowId, taskId, from_order, to_order);
     return res;
 }
 

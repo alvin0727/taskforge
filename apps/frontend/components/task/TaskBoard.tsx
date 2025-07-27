@@ -173,7 +173,7 @@ export default function TaskBoard() {
     setParentTasksByStatus({ ...parentTasksByStatus, [status]: reordered });
 
     try {
-      await taskService.updateTaskOrderParent(workflow.id, activeId, newIndex);
+      await taskService.updateTaskOrderParent(workflow.id, activeId, oldIndex, newIndex);
     } catch (error) {
       setParentTasksByStatus(prev);
       toast.error('Failed to update task order. Please try again.');
@@ -211,6 +211,13 @@ export default function TaskBoard() {
       targetStatus = over.id as TaskStatus;
     }
     if (!targetStatus || !activeTaskObj) return;
+
+    if (
+      targetStatus === activeTaskObj.status &&
+      (!overTaskObj || overTaskObj.id === activeTaskObj.id)
+    ) {
+      return;
+    }
 
     const prev = JSON.parse(JSON.stringify(parentTasksByStatus));
     // Remove from old status

@@ -12,8 +12,8 @@ async function updateParentTaskStatus(workflowId: string, taskId: string, status
     return res.data;
 }
 
-async function updateParentTaskOrder(workflowId: string, taskId: string, order: number): Promise<any> {
-    const res = await api.patch(`/tasks/${workflowId}/parent/${taskId}/${order}`);
+async function updateParentTaskOrder(workflowId: string, taskId: string, from_order: number, to_order: number): Promise<any> {
+    const res = await api.patch(`/tasks/${workflowId}/parent/${taskId}/order`, { from_order, to_order });
     return res.data;
 }
 

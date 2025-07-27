@@ -6,9 +6,10 @@ from bson import ObjectId
 from pydantic import BaseModel
 
 class StatusUpdateRequest(BaseModel):
-    new_status: str
+    new_status: str = None
     from_order: int = None
     to_order: int = None
+    
 
 router = APIRouter()
 
@@ -49,7 +50,7 @@ async def update_parent_task_status(
         logger.error(f"Error updating parent task status: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@router.patch("/{workflow_id}/parent/{task_id}/{new_order}")
+@router.patch("/{workflow_id}/parent/{task_id}/order")
 async def update_parent_task_order(
     workflow_id: str,
     task_id: str,
