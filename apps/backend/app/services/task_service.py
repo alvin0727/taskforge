@@ -3,7 +3,6 @@ from datetime import datetime
 from pymongo import UpdateOne
 from bson import ObjectId
 from app.utils.logger import logger
-from app.utils.validators import validate_task_status
 
 async def update_parent_task_status(workflow_id: str, task_id: str, new_status: str):
     """
@@ -11,8 +10,6 @@ async def update_parent_task_status(workflow_id: str, task_id: str, new_status: 
     Setelah pindah status, urutkan ulang order di status lama.
     """
     try:
-        validate_task_status(new_status)
-
         # Get the task to be updated
         task = await db["tasks"].find_one({"_id": ObjectId(task_id), "workflow_id": workflow_id})
         if not task:

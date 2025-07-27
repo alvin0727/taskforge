@@ -9,6 +9,10 @@ async def ensure_indexes():
         [("workflow_id", 1), ("status", 1), ("order", 1)],
         unique=True
     )
+    await db["users"].create_index(
+        [("email", 1)],
+        unique=True
+    )
 
 def get_db():
     return db

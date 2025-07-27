@@ -1,15 +1,9 @@
-from fastapi import APIRouter, Body, HTTPException
-from typing import List, Dict
+from fastapi import APIRouter, HTTPException
 from app.utils.logger import logger
 import app.services.task_service as task_service
 from bson import ObjectId
-from pydantic import BaseModel
+import app.utils.validators as validators
 
-class StatusUpdateRequest(BaseModel):
-    new_status: str = None
-    from_order: int = None
-    to_order: int = None
-    
 
 router = APIRouter()
 
@@ -19,7 +13,7 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 async def update_parent_task_status(
     workflow_id: str,
     task_id: str,
-    body: StatusUpdateRequest
+    body: validators.StatusUpdateRequest
 ):
     new_status = body.new_status
     try:
@@ -54,7 +48,7 @@ async def update_parent_task_status(
 async def update_parent_task_order(
     workflow_id: str,
     task_id: str,
-    body: StatusUpdateRequest
+    body: validators.ReorderUpdateRequest
 ):
     try:
         result = await task_service.update_parent_task_order(workflow_id, task_id, body.from_order, body.to_order)

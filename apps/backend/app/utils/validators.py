@@ -1,5 +1,9 @@
 from app.utils.const_value import TaskStatus
+from pydantic import BaseModel
 
-def validate_task_status(status: str):
-    if status not in [e.value for e in TaskStatus]:
-        raise ValueError(f"Invalid status: {status}")
+class StatusUpdateRequest(BaseModel):
+    new_status: TaskStatus
+
+class ReorderUpdateRequest(BaseModel):
+    from_order: int
+    to_order: int

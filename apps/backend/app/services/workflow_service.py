@@ -1,5 +1,6 @@
 from app.db.database import db
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from bson import ObjectId
 from app.utils.logger import logger
 from app.services.llm_generator import generate_dummy_tasks
@@ -20,7 +21,7 @@ async def save_workflow_to_db(user_id: str, prompt: str) -> str:
         workflow = {
             "user_id": user_id,
             "prompt": prompt,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(ZoneInfo("Asia/Jakarta"))
         }
         result = await db["workflows"].insert_one(workflow)
         workflow_id = str(result.inserted_id)
@@ -30,7 +31,7 @@ async def save_workflow_to_db(user_id: str, prompt: str) -> str:
         if dummy_tasks:
             for task in dummy_tasks:
                 task["workflow_id"] = workflow_id
-                task["created_at"] = datetime.utcnow()
+                task["created_at"] = datetime.now(ZoneInfo("Asia/Jakarta"))
                 task = prepare_task_for_db(task)
                 await db["tasks"].insert_one(task)
         return workflow_id
