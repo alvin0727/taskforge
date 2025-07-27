@@ -15,7 +15,17 @@ async function updateTaskStatusParent(
     return res;
 }
 
+async function updateTaskOrderParent(
+    workflowId: string,
+    taskId: string,
+    order: number
+): Promise<any> {
+    const res = await taskAdapter.updateParentTaskOrder(workflowId, taskId, order);
+    return res;
+}
+
 export default {
     fetchTaskById,
     updateTaskStatusParent,
+    updateTaskOrderParent,
 }
