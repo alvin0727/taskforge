@@ -7,6 +7,8 @@ from pydantic import BaseModel
 
 class StatusUpdateRequest(BaseModel):
     new_status: str
+    from_order: int = None
+    to_order: int = None
 
 router = APIRouter()
 
@@ -51,12 +53,12 @@ async def update_parent_task_status(
 async def update_parent_task_order(
     workflow_id: str,
     task_id: str,
-    new_order: int
+    body: StatusUpdateRequest
 ):
     try:
-        result = await task_service.update_parent_task_order(workflow_id, task_id, new_order)
+        result = await task_service.update_parent_task_order(workflow_id, task_id, body.from_order, body.to_order)
         if result > 0:
-            logger.info(f"Updated task {task_id} order to {new_order} in workflow {workflow_id}")
+            logger.info(f"Updated task {task_id} order to {body.to_order} in workflow {workflow_id}")
             return {"message": "Parent task order updated successfully"}
         else:
             logger.warning(f"Task {task_id} not found in workflow {workflow_id}")

@@ -65,14 +65,15 @@ async def update_parent_task_status(workflow_id: str, task_id: str, new_status: 
         logger.error(f"Error updating parent task status: {e}")
         raise
 
-async def update_parent_task_order(workflow_id:str, task_id:str, new_order:int):
+async def update_parent_task_order(workflow_id:str, task_id:str, from_order: int, to_order: int):
     """
     Update the order of a parent task in a workflow.
     
     Args:
         workflow_id (str): The ID of the workflow.
         task_id (str): The ID of the task.
-        new_order (int): The new order to set for the task.
+        from_order (int): The current order of the task.
+        to_order (int): The new order to set for the task.
     Returns:
         int: The number of documents modified.
     """
@@ -82,26 +83,35 @@ async def update_parent_task_order(workflow_id:str, task_id:str, new_order:int):
         if not task:
             raise ValueError("Task not found")
         
-        current_status = task["status"]
+        status = task["status"]
         
-        # Cek if there another task with status and order same in this workflow
-        conflict = await db["tasks"].find_one({
+        # Get all parents in the same status and sort
+        tasks = await db["tasks"].find({
             "workflow_id": workflow_id,
-            "status": current_status,
-            "order": new_order,
-            "_id": {"$ne": ObjectId(task_id)}
-        })
+            "status": status,
+            "parent_id": None
+        }).sort("order", 1).to_list(length=None)
         
-        if conflict:
-            raise ValueError(f"Order {new_order} has been use in '{current_status}' status.")
+        if from_order < 0 or from_order >= len(tasks) or to_order < 0 or to_order >= len(tasks):
+            raise ValueError("Invalid from_order or to_order")   
         
-        # Update order task
-        result = await db["tasks"].update_one(
-                    {"_id": ObjectId(task_id), "workflow_id": workflow_id},
-                    {"$set": {"order": new_order}}
+        moved_task = tasks.pop(from_order)
+        tasks.insert(to_order, moved_task)
+         
+        # Update order every task in this status
+        bulk_ops = []
+        for idx, t in enumerate(tasks):
+            if t["order"] != idx:
+                bulk_ops.append(
+                    UpdateOne(
+                        {"_id": t["_id"]},
+                        {"$set": {"order": idx}}
+                    )
                 )
-        return result.modified_count
+        if bulk_ops:
+            await db["tasks"].bulk_write(bulk_ops)
         
+        return len(bulk_ops)
     except Exception as e:
         logger.error(f"Error updating parent task order: {e}")
         raise
