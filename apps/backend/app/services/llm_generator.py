@@ -67,7 +67,7 @@ def generate_dummy_tasks(workflow_id: str, num_root: int = 10, num_sub: int = 2)
                 is_completed=False,
                 dependencies=[],
                 order=j,
-                parent_id=root.id
+                parent_id=str(root.id) 
             )
             tasks.append(sub)
     return [t.model_dump(by_alias=True) for t in tasks]

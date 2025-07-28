@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Body, HTTPException
-from typing import List, Dict
+from typing import Dict
 from app.utils.logger import logger
-from app.services.llm_generator import generate_tasks_from_prompt
 import app.services.workflow_service as workflow_service
+import app.utils.validators.workflow_validators as validators
+
 
 
 router = APIRouter()
@@ -11,14 +12,13 @@ router = APIRouter(prefix="/workflows", tags=["workflows"])
 
 @router.post("/generate-tasks")
 async def generate_workflow(
-    prompt: str = Body(..., embed=True),
-    user_id: str = Body(..., embed=True)
+    workflow: validators.AddWorkflow
 ) -> Dict:
     """
     Generate a workflow based on the provided prompt and save to DB.
     """
     try:
-        workflow_id = await workflow_service.save_workflow_to_db(user_id, prompt)
+        workflow_id = await workflow_service.save_workflow_to_db(workflow.user_id, workflow.prompt, workflow.title)
         logger.info("Generated and saved workflow successfully")
         return {"workflow_id": workflow_id}
     except Exception as e:

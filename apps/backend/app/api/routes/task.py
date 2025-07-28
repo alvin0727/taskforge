@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.utils.logger import logger
 import app.services.task_service as task_service
-from bson import ObjectId
-import app.utils.validators as validators
+import app.utils.validators.task_validators as validators
 
 
 router = APIRouter()

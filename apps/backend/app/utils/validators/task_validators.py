@@ -7,3 +7,4 @@ class StatusUpdateRequest(BaseModel):
 class ReorderUpdateRequest(BaseModel):
     from_order: int
     to_order: int
+

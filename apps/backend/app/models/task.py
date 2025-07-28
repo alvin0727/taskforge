@@ -5,11 +5,8 @@ from bson import ObjectId
 from app.utils.const_value import TaskStatus
 from zoneinfo import ZoneInfo
 
-def generate_id():
-    return str(ObjectId())
-
 class Task(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: ObjectId = Field(default_factory=ObjectId, alias="_id")
     workflow_id: str  # Foreign key ke Workflow
     title: str
     description: Optional[str] = None
@@ -18,11 +15,12 @@ class Task(BaseModel):
     dependencies: List[str] = Field(default_factory=list)
     order: int = Field(default=0)
     parent_id: Optional[str] = None  # None if root task, else id of parent task
-    created_at: datetime = Field(default_factory=datetime.now(ZoneInfo("Asia/Jakarta")))
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(ZoneInfo("Asia/Jakarta")))
 
-    class Config:
-        validate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {
-            ObjectId: str
-        }
+    model_config = {
+       "validate_by_name": True,
+       "arbitrary_types_allowed": True,
+       "json_encoders": {
+           ObjectId: str
+       }
+    }

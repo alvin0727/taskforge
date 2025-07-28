@@ -13,6 +13,17 @@ async def ensure_indexes():
         [("email", 1)],
         unique=True
     )
+    await db["verification_tokens"].create_index(
+        [("userId", 1), ("type", 1)]
+    )
+    await db["verification_tokens"].create_index(
+        [("token", 1)],
+        unique=True
+    )
+    await db["verification_tokens"].create_index(
+        [("expiresAt", 1)],
+        expireAfterSeconds=0
+    )
 
 def get_db():
     return db
