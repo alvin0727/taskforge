@@ -1,33 +1,24 @@
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.db.database import get_db
+from app.db.database import get_db, ensure_indexes
 from app.utils.logger import logger
 from app.api import router as api_router
-import logging
+from app.api.middlewares.middleware import LoggingMiddleware, add_cors_middleware
 
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Lebih aman, hanya izinkan frontend
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+add_cors_middleware(app)
+app.add_middleware(LoggingMiddleware)
 
 @app.on_event("startup")
 async def startup_db_check():
     try:
         db = get_db()
         await db.command("ping")
+        await ensure_indexes()
         logger.info("MongoDB connected successfully.")
     except Exception as e:
         logger.error(f"MongoDB connection failed: {e}")
 
-@app.get("/")
-def read_root():
-    logging.info("Root endpoint accessed")
-    return {"message": "Hello from FastAPI!"}
 
 app.include_router(api_router)

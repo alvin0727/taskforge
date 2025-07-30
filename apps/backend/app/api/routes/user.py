@@ -35,3 +35,25 @@ async def verify_email(token: str):
         logger.error(f"Error verifying email: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+
+@router.post("/resend-verification-email")
+async def resend_verification_email(email: str):
+    try:
+        await user_service.resendVerificationEmail(email)
+        return {"message": "Verification email resent successfully"}
+    except ValueError as e:
+        logger.warning(f"Error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error resending verification email: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.post("/login")
+async def login_user(user: validators.LoginUser):
+    user_id = await user_service.login(
+        email=user.email,
+        password=user.password
+    )
+    return {"message": "Login successful", "user_id": user_id}
+
+

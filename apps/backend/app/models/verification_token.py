@@ -18,7 +18,7 @@ class VerificationToken(BaseModel):
     token: str
     type: Literal['email_verification', 'password_reset', 'otp']
     otpMetadata: Optional[OTPMetadata] = None
-    expiresAt: datetime
+    expires_at: datetime
     created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(ZoneInfo("Asia/Jakarta")))
     updated_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(ZoneInfo("Asia/Jakarta")))
 
