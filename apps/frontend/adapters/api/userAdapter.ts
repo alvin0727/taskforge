@@ -10,8 +10,13 @@ export async function verifyOTP(email: string, otp: string): Promise<{ message: 
   const res = await api.post(`/users/verify-otp`, { email, otp });
   return res.data;
 }
+export async function getProfile(): Promise<User> {
+  const res = await api.get(`/users/me`);
+  return res.data;
+}
 
 export default {
   login,
   verifyOTP,
-}
+  getProfile,
+};

@@ -17,13 +17,13 @@ export default function TaskPage() {
 
     // Helper: cari task secara rekursif di tree
     function findTaskById(tasks: Task[], taskId: string): Task | null {
-        for (const t of tasks) {
-            if (t.id === taskId) return t;
-            if (t.children && t.children.length > 0) {
-                const found = findTaskById(t.children, taskId);
-                if (found) return found;
-            }
-        }
+        // for (const t of tasks) {
+        //     if (t.id === taskId) return t;
+        //     if (t.children && t.children.length > 0) {
+        //         const found = findTaskById(t.children, taskId);
+        //         if (found) return found;
+        //     }
+        // }
         return null;
     }
 

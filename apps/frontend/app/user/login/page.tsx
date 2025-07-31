@@ -8,6 +8,7 @@ import { HiLockClosed, HiShieldCheck } from "react-icons/hi2";
 import { HiMail } from "react-icons/hi";
 import { useUserStore } from "@/stores/userStore";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
+import userService from "@/services/users/userService";
 
 export default function Login() {
     const router = useRouter();
@@ -20,6 +21,23 @@ export default function Login() {
     const [resending, setResending] = useState(false);
 
     const otpRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+
+    useEffect(() => {
+        let isMounted = true;
+        async function checkAuthenticated() {
+            try {
+                const profile = await userService.getProfile();
+                if (profile && isMounted) {
+                    router.replace("/");
+                }
+            } catch (error) {
+                // Optional: log error for debugging, but don't show to user
+                // console.warn("Not authenticated:", error);
+            }
+        }
+        checkAuthenticated();
+        return () => { isMounted = false; };
+    }, [router]);
 
     useEffect(() => {
         if (step === "otp" && timer > 0) {

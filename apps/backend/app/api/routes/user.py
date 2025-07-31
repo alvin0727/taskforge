@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Response
-from app.utils.logger import logger
+from fastapi import APIRouter, Depends, Response
 import app.services.user_service as user_service
 import app.utils.validators.user_validators as validators
+from app.api.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -51,3 +51,13 @@ async def verify_otp(verify_otp: validators.verify_otp, response: Response):
 async def resend_otp(email: str):
         await user_service.resend_otp(email)
         return {"message": "OTP resent successfully"}
+    
+@router.get("/me")
+async def get_me(current_user=Depends(get_current_user)):
+    user = await user_service.get_user_by_id(current_user["id"])
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "name": user.name,
+        "is_verified": getattr(user, "is_verified", False),
+    }

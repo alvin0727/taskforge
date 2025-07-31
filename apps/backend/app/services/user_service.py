@@ -355,3 +355,23 @@ async def resend_otp(email: str) -> bool:
     except Exception as e:
         logger.error(f"Error resending OTP: {e}")
         return False
+
+async def get_user_by_id(user_id: str) -> User:
+    """
+    Get user details by user ID.
+    Args:
+        user_id (str): The ID of the user.
+    Returns:
+        User: The user object.
+    """
+    try:
+        user = await db["users"].find_one({"_id": ObjectId(user_id)})
+        if not user:
+            logger.warning(f"User not found for ID: {user_id}")
+            raise HTTPException(status_code=404, detail="User not found")
+        return User(**user)
+    except HTTPException:
+        raise 
+    except Exception as e:
+        logger.error(f"Error fetching user by ID: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
