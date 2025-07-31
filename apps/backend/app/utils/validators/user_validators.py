@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-class RegisterUser(BaseModel):
+class register_user(BaseModel):
     email: str
     name: str
     password: str
@@ -8,3 +8,8 @@ class RegisterUser(BaseModel):
 class LoginUser(BaseModel):
     email: str
     password: str
+
+class verify_otp(BaseModel):
+    email: str
+    otp: str
+    

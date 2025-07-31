@@ -7,8 +7,10 @@ from passlib.context import CryptContext
 from app.services.email_service import generate_verification_token, send_verification_email
 from app.services.otp_service import generate_otp, send_otp_email
 from app.models.user import User
-from app.models.verification_token import VerificationToken, OTPMetadata
-from fastapi import HTTPException
+from app.models.verification_token import Verification_Token, OTPMetadata
+from fastapi import HTTPException, Response
+import app.utils.token_manager as token_manager
+import app.api.dependencies as dependencies
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -16,7 +18,7 @@ def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
     return pwd_context.hash(password)
 
-async def registerUser(email: str, name: str, password: str) -> str:
+async def register_user(email: str, name: str, password: str) -> str:
     """
     Register a new user with email, name, and password.
     Args:
@@ -29,7 +31,7 @@ async def registerUser(email: str, name: str, password: str) -> str:
     try:
         existingUser = await db["users"].find_one({"email": email})
         if existingUser:
-            raise ValueError("Email already registered")
+            raise HTTPException(status_code=400, detail="Email already registered")
 
         user = User(
             email=email,
@@ -39,7 +41,7 @@ async def registerUser(email: str, name: str, password: str) -> str:
         result = await db["users"].insert_one(user.model_dump(by_alias=True))
 
         token = generate_verification_token()
-        verification_token = VerificationToken(
+        verification_token = Verification_Token(
             user_id=str(result.inserted_id),
             token=token,
             type="email_verification",
@@ -49,11 +51,13 @@ async def registerUser(email: str, name: str, password: str) -> str:
         await send_verification_email(email, token)
         logger.info(f"User registered successfully with ID: {result.inserted_id}")
         return str(result.inserted_id)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error registering user: {e}")
         raise
 
-async def verifyEmail(token: str) -> bool:
+async def verify_email(token: str) -> bool:
     """
     Verify the email address of a user using the verification token.
     Args:
@@ -62,20 +66,22 @@ async def verifyEmail(token: str) -> bool:
         bool: True if the email is verified, False otherwise.
     """
     try:
-        verificationToken = await db["verification_tokens"].find_one({"token": token})
-        if not verificationToken:
+        Verification_Token = await db["verification_tokens"].find_one({"token": token})
+        if not Verification_Token:
             logger.warning(f"Invalid verification token: {token}")
-            raise ValueError("Invalid or expired verification token")
+            raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-        await db["users"].update_one({"_id": ObjectId(verificationToken["user_id"])}, {"$set": {"is_verified": True}})
-        await db["verification_tokens"].delete_one({"_id": ObjectId(verificationToken["_id"])})
-        logger.info(f"Email verified successfully for user ID: {verificationToken['user_id']}")
+        await db["users"].update_one({"_id": ObjectId(Verification_Token["user_id"])}, {"$set": {"is_verified": True}})
+        await db["verification_tokens"].delete_one({"_id": ObjectId(Verification_Token["_id"])})
+        logger.info(f"Email verified successfully for user ID: {Verification_Token['user_id']}")
         return True
+    except HTTPException:
+        raise 
     except Exception as e:
         logger.error(f"Error verifying email: {e}")
-        raise
+        return False
 
-async def resendVerificationEmail(email: str) -> bool:
+async def resend_verification_email(email: str) -> bool:
     """
     Resend the verification email to the user.
     Args:
@@ -87,13 +93,13 @@ async def resendVerificationEmail(email: str) -> bool:
         user = await db["users"].find_one({"email": email})
         if not user or user.get("is_verified", False):
             logger.warning(f"User not found or already verified: {email}")
-            return False
+            raise HTTPException(status_code=404, detail="User not found")
 
         # Delete any existing verification tokens for this user
         await db["verification_tokens"].delete_many({"user_id": str(user["_id"])})
         
         token = generate_verification_token()
-        verification_token = VerificationToken(
+        verification_token = Verification_Token(
             user_id=str(user["_id"]),
             token=token,
             type="email_verification",
@@ -103,8 +109,10 @@ async def resendVerificationEmail(email: str) -> bool:
         await send_verification_email(email, token)
         logger.info(f"Verification email resent to: {email}")
         return True
+    except HTTPException:
+        raise 
     except Exception as e:
-        logger.error(f"Error resending verification email: {e}")
+        logger.error(f"Error resend verification email: {e}")
         return False
     
 async def login(email: str, password: str) -> str:
@@ -135,7 +143,7 @@ async def login(email: str, password: str) -> str:
             now = datetime.utcnow()
             if block_until.tzinfo is not None:
                 block_until = block_until.replace(tzinfo=None)
-            block_time_left = -(-int((block_until - now).total_seconds()) // 60)  # ceil division
+                block_time_left = -(-int((block_until - now).total_seconds()) // 60)  # ceil division
             if block_time_left > 0:
                 raise HTTPException(
                     status_code=429,
@@ -158,7 +166,7 @@ async def login(email: str, password: str) -> str:
                 {"$set": {"token": otp}}
             )
         else:
-            otp_token = VerificationToken(
+            otp_token = Verification_Token(
                 user_id=str(user["_id"]),
                 token=otp,
                 type="otp",
@@ -182,3 +190,164 @@ async def login(email: str, password: str) -> str:
         logger.error(f"Error logging in user: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+async def verify_otp(email: str, otp: str, response: Response) -> bool:
+    try:
+        user = await db["users"].find_one({"email": email})
+        if not user:
+            logger.warning(f"User not found for email: {email}")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        
+        verification_token = await db["verification_tokens"].find_one({
+            "user_id": str(user["_id"]),
+            "type": "otp"
+        })
+        
+        if not verification_token:
+            logger.warning(f"Invalid OTP for email: {email}")
+            raise HTTPException(status_code=400, detail="Invalid OTP, not found or expired")
+
+        if verification_token["otpMetadata"]["isBlocked"] and verification_token["otpMetadata"]["blockUntil"] > datetime.utcnow():
+            block_until = verification_token["otpMetadata"]["blockUntil"]
+            now = datetime.utcnow()
+            block_time_left = -(-int((block_until - now).total_seconds()) // 60)  # ceil division
+            if block_time_left > 0:
+                raise HTTPException(
+                    status_code=429,
+                    detail={
+                        "message": f"Too many failed attempts. Please try again in {block_time_left} minutes.",
+                        "blockTimeLeft": block_time_left
+                    }
+                )
+        
+        # Check if OTP is valid
+        if verification_token["token"] != otp:
+            logger.info(f"OTP for email: {otp}")
+            verification_token["otpMetadata"]["attempts"] += 1
+            verification_token["otpMetadata"]["lastAttempt"] = datetime.utcnow()
+            
+            # Check if attempts exceed max allowed
+            if verification_token["otpMetadata"]["attempts"] >= verification_token["otpMetadata"]["maxAttempts"]:
+                verification_token["otpMetadata"]["isBlocked"] = True
+                verification_token["otpMetadata"]["blockUntil"] = datetime.utcnow() + timedelta(minutes=15)
+                verification_token["expires_at"] = datetime.utcnow() + timedelta(minutes=15)
+            
+            remaining_attempts = verification_token["otpMetadata"]["maxAttempts"] - verification_token["otpMetadata"]["attempts"]
+            await db["verification_tokens"].update_one(
+                {"_id": verification_token["_id"]},
+                {
+                    "$set": {
+                        "otpMetadata": verification_token["otpMetadata"],
+                        "expires_at": verification_token["expires_at"]
+                    }
+                }
+            )
+            
+            if verification_token["otpMetadata"]["isBlocked"]:
+                logger.warning(f"User {email} blocked due to too many failed OTP attempts")
+                raise HTTPException(status_code=429, detail="Too many failed attempts. Please try again later.")
+            else:
+                logger.warning(f"Invalid OTP for email: {email}")
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "message": "Invalid OTP",
+                        "remaining_attempts": remaining_attempts
+                    }
+                )
+
+        # If OTP is valid, reset attempts and remove the token
+        await db["verification_tokens"].delete_one({"_id": verification_token["_id"]})
+        
+        # Clear old cookies
+        await dependencies.clear_auth_cookie(response)
+        
+        # Create a new token for the user
+        token = token_manager.create_token(
+            str(user["_id"]),
+            email,
+            user.get("is_verified", False)
+        )        
+        # Set new cookies
+        await dependencies.set_auth_cookie(response, token)
+        return True
+    except HTTPException:
+        raise 
+    except Exception as e:
+        logger.error(f"Error logging in user: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
+async def resend_otp(email: str) -> bool:
+    """
+    Resend the OTP to the user's email.
+    Args:
+        email (str): The email of the user.
+    Returns:
+        bool: True if the OTP was resent successfully, False otherwise.
+    """
+    try:
+        user = await db["users"].find_one({"email": email})
+        if not user:
+            logger.warning(f"User not found for email: {email}")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        
+        existing_token = await db["verification_tokens"].find_one({
+            "user_id": str(user["_id"]),
+            "type": "otp"
+        })
+
+        if not existing_token:
+            logger.warning(f"Invalid OTP for email: {email}")
+            raise HTTPException(status_code=400, detail="Invalid OTP, not found or expired")
+
+        if existing_token["otpMetadata"]["isBlocked"] and existing_token["otpMetadata"]["blockUntil"] > datetime.utcnow():
+            block_until = existing_token["otpMetadata"]["blockUntil"]
+            now = datetime.utcnow()
+            block_time_left = -(-int((block_until - now).total_seconds()) // 60)  # ceil division
+            if block_time_left > 0:
+                raise HTTPException(
+                    status_code=429,
+                    detail={
+                        "message": f"Too many failed attempts. Please try again in {block_time_left} minutes.",
+                        "blockTimeLeft": block_time_left
+                    }
+                )
+        
+        if existing_token and "otpMetadata" in existing_token and existing_token["otpMetadata"].get("lastGenerated"):
+            last_generated = existing_token["otpMetadata"]["lastGenerated"]
+            now_utc = datetime.utcnow()
+            if last_generated.tzinfo is not None:
+                last_generated = last_generated.replace(tzinfo=None)
+            time_since_last_otp = (now_utc - last_generated).total_seconds()
+            one_minute_in_seconds = 60
+
+            if time_since_last_otp < one_minute_in_seconds:
+                wait_time = int(one_minute_in_seconds - time_since_last_otp)
+                logger.warning(f"User {email} exceeded resend rate limit")
+                raise HTTPException(
+                    status_code=429,
+                    detail={
+                        "message": f"Please wait {wait_time} seconds before requesting a new OTP.",
+                        "waitTime": wait_time
+                    }
+                )
+        
+        otp = generate_otp()
+        
+        if existing_token:
+            # Update existing token with new OTP and expiry, preserve metadata but update lastGenerated
+            update_fields = {
+                "token": otp,
+                "otpMetadata.lastGenerated": datetime.now(ZoneInfo("Asia/Jakarta")),
+            }
+            await db["verification_tokens"].update_one(
+                {"_id": existing_token["_id"]},
+                {"$set": update_fields}
+            )
+        return True
+    except HTTPException:
+        raise 
+    except Exception as e:
+        logger.error(f"Error resending OTP: {e}")
+        return False

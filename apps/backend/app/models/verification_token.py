@@ -12,7 +12,7 @@ class OTPMetadata(BaseModel):
     blockUntil: Optional[datetime] = None
     lastGenerated: Optional[datetime] = None
 
-class VerificationToken(BaseModel):
+class Verification_Token(BaseModel):
     id: ObjectId = Field(default_factory=ObjectId, alias="_id")
     user_id: str = Field(..., description="User ID (ObjectId as str)")
     token: str
