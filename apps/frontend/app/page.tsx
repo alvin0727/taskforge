@@ -1,8 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useUserStore } from "@/stores/userStore";
 
 export default function Home() {
   const router = useRouter();
+  const user = useUserStore((state) => state.user);
+  console.log("User:", user);
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
       <button

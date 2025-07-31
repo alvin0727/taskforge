@@ -95,8 +95,10 @@ async def test_verify_email_token_not_found():
 
         mock_db.__getitem__.return_value = verification_tokens_collection
 
-        with pytest.raises(ValueError, match="Invalid or expired verification token"):
+        with pytest.raises(HTTPException) as exc_info:
             await user_service.verify_email(token)
+        assert exc_info.value.status_code == 400
+        assert "Invalid or expired" in str(exc_info.value.detail)
 
 @pytest.mark.asyncio
 async def test_resend_verification_email_success():
@@ -159,7 +161,7 @@ async def test_login_user_success():
 
         user_id = await user_service.login(email, password)
 
-        assert user_id is not None
+        assert user_id is True
         users_collection.find_one.assert_awaited_once_with({"email": email})
 
 @pytest.mark.asyncio
@@ -244,7 +246,8 @@ async def test_verify_otp_success():
         response = MagicMock()
         result = await user_service.verify_otp(email, otp, response)
 
-        assert result is True
+        assert isinstance(result, dict)
+        assert result["email"] == email
         verification_tokens_collection.find_one.assert_awaited_once_with({
             "user_id": str(users_collection.find_one.return_value["_id"]),
             "type": "otp"
@@ -336,7 +339,7 @@ async def test_resend_otp_success():
                 "lastAttempt": None,
                 "isBlocked": False,
                 "blockUntil": None,
-                "lastGenerated": datetime.now(ZoneInfo("Asia/Jakarta")) - timedelta(minutes=2),
+                "lastGenerated": datetime.utcnow() - timedelta(minutes=2),
             },
         })
         verification_tokens_collection.update_one = AsyncMock(return_value=None)

@@ -183,7 +183,7 @@ async def login(email: str, password: str) -> str:
 
         await send_otp_email(email, otp)
         logger.info(f"OTP sent to email: {email}")
-        return str(user["_id"])
+        return True
     except HTTPException:
         raise 
     except Exception as e:
@@ -245,7 +245,11 @@ async def verify_otp(email: str, otp: str, response: Response) -> bool:
             
             if verification_token["otpMetadata"]["isBlocked"]:
                 logger.warning(f"User {email} blocked due to too many failed OTP attempts")
-                raise HTTPException(status_code=429, detail="Too many failed attempts. Please try again later.")
+                raise HTTPException(
+                    status_code=429, 
+                    detail={
+                        "message": "Too many failed attempts. You have been blocked for 15 minutes.",
+                    })
             else:
                 logger.warning(f"Invalid OTP for email: {email}")
                 raise HTTPException(
@@ -270,7 +274,7 @@ async def verify_otp(email: str, otp: str, response: Response) -> bool:
         )        
         # Set new cookies
         await dependencies.set_auth_cookie(response, token)
-        return True
+        return user
     except HTTPException:
         raise 
     except Exception as e:

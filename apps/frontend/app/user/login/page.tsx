@@ -3,10 +3,14 @@
 import UserService from "@/services/users/userService";
 import toast from "react-hot-toast";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { HiLockClosed, HiShieldCheck } from "react-icons/hi2";
 import { HiMail } from "react-icons/hi";
+import { useUserStore } from "@/stores/userStore";
+import { getAxiosErrorMessage } from "@/utils/errorMessage";
 
 export default function Login() {
+    const router = useRouter();
     const [step, setStep] = useState<"login" | "otp">("login");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -63,8 +67,17 @@ export default function Login() {
             return;
         }
         setError("");
-        // Call your OTP verification service here
-        toast.success("OTP verification successful");
+        try {
+            const response = await UserService.verifyOTP(email, code);
+            if (response && response.user) {
+                useUserStore.setState({ user: response.user });
+            }
+            router.push("/");
+        } catch (err) {
+            const message = getAxiosErrorMessage(err);
+            setError(message);
+            toast.error(message);
+        }
     };
 
     const handleResendOtp = async () => {

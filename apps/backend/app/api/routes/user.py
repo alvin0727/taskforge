@@ -28,7 +28,7 @@ async def resend_verification_email(email: str):
 
 @router.post("/login")
 async def login_user(user: validators.LoginUser):
-    user_id = await user_service.login(
+    await user_service.login(
         email=user.email,
         password=user.password
     )
@@ -36,8 +36,16 @@ async def login_user(user: validators.LoginUser):
 
 @router.post("/verify-otp")
 async def verify_otp(verify_otp: validators.verify_otp, response: Response):
-    await user_service.verify_otp(verify_otp.email, verify_otp.otp, response)
-    return {"message": "Login successful", "email": verify_otp.email}
+    user = await user_service.verify_otp(verify_otp.email, verify_otp.otp, response)
+    return {
+        "message": "Login successful",
+        "user": {
+            "id": str(user["_id"]),
+            "email": user["email"],
+            "name": user.get("name"),
+            "is_verified": user.get("is_verified", False),
+        }
+    }
     
 @router.post("/resend-otp")
 async def resend_otp(email: str):
