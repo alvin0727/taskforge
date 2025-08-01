@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response
 import app.services.user_service as user_service
 import app.utils.validators.user_validators as validators
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_current_user_from_refresh_token
 from app.models.user import UserWithMessage
 
 router = APIRouter()
@@ -49,6 +49,6 @@ async def get_me(current_user=Depends(get_current_user)):
     return await user_service.get_user_by_id(current_user["id"])
 
 @router.post("/refresh-token")
-async def refresh_token(response: Response, current_user=Depends(get_current_user)):
+async def refresh_token(response: Response, current_user=Depends(get_current_user_from_refresh_token)):
     await user_service.refresh_user_session(current_user["id"], response)
     return {"message": "Session refreshed successfully"}

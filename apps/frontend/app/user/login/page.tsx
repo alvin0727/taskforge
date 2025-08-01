@@ -11,6 +11,7 @@ import { useUserStore } from "@/stores/userStore";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
 import userService from "@/services/users/userService";
 
+
 export default function Login() {
     const router = useRouter();
     const [step, setStep] = useState<"login" | "otp">("login");
@@ -40,6 +41,14 @@ export default function Login() {
         checkAuthenticated();
         return () => { isMounted = false; };
     }, [router]);
+
+    useEffect(() => {
+        const msg = sessionStorage.getItem("authError");
+        if (msg) {
+            toast.error(msg, { duration: 3000 });
+            sessionStorage.removeItem("authError");
+        }
+    }, []);
 
     useEffect(() => {
         if (step === "otp" && timer > 0) {
@@ -126,7 +135,7 @@ export default function Login() {
             {/* Background Pattern */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-neutral-950"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_70%)]"></div>
-            
+
             {/* TaskForge Logo Pattern */}
             <div className="absolute top-10 left-10 opacity-10">
                 <svg width="48" height="48" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -143,7 +152,7 @@ export default function Login() {
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-lg mb-4">
                         {step === "login" ? <HiLockClosed size={32} /> : <HiShieldCheck size={32} />}
                     </div>
-                    
+
                     {/* TaskForge Brand */}
                     <div className="flex items-center gap-2 mb-2">
                         <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -184,7 +193,7 @@ export default function Login() {
                                     />
                                 </div>
                             </div>
-                            
+
                             <div>
                                 <label className="block mb-2 text-neutral-200 font-medium text-sm">Password</label>
                                 <div className="relative">

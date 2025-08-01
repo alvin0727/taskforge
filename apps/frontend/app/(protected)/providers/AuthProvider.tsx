@@ -22,12 +22,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           setUser(profile);
         } else if (isMounted) {
           router.replace("/user/login");
-          toast.error("You must be logged in to access this page.");
         }
       } catch {
         if (isMounted) {
           router.replace("/user/login");
-          toast.error("You must be logged in to access this page.");
         }
       }
     }
