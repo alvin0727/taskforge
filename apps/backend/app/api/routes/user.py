@@ -7,8 +7,8 @@ router = APIRouter()
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.post("/register")
-async def register_user(user: validators.register_user):
+@router.post("/signup")
+async def signup_user(user: validators.register_user):
         await user_service.register_user(
             email=user.email,
             name=user.name,

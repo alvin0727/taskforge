@@ -45,7 +45,7 @@ async def register_user(email: str, name: str, password: str) -> str:
             user_id=str(result.inserted_id),
             token=token,
             type="email_verification",
-            expiresAt=datetime.now(ZoneInfo("Asia/Jakarta")) + timedelta(hours=24),  # Token valid for 24 hours
+            expires_at=datetime.now(ZoneInfo("Asia/Jakarta")) + timedelta(hours=24),  # Token valid for 24 hours
         )
         result = await db["verification_tokens"].insert_one(verification_token.model_dump(by_alias=True))
         await send_verification_email(email, token)
@@ -128,7 +128,7 @@ async def login(email: str, password: str) -> str:
         user = await db["users"].find_one({"email": email})
         if not user or not pwd_context.verify(password, user["password"]):
             logger.warning(f"Login failed for email: {email}")
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+            raise HTTPException(status_code=401, detail={"message": "Invalid email or password"})
 
         # Check if user is currently blocked from OTP requests
         existing_otp_token = await db["verification_tokens"].find_one({

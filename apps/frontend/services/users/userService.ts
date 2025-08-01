@@ -14,9 +14,14 @@ async function getProfile(): Promise<User> {
   const res = await UserAdapter.getProfile();
   return res;
 }
+async function signup(email: string, name: string, password: string): Promise<any> {
+  const res = await UserAdapter.signup(email, name, password);
+  return res;
+}
 
 export default {
   login,
   verifyOTP,
   getProfile,
+  signup,
 };

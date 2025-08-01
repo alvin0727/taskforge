@@ -15,8 +15,14 @@ export async function getProfile(): Promise<User> {
   return res.data;
 }
 
+export async function signup(email: string, name: string, password: string): Promise<any> {
+  const res = await api.post(`/users/signup`, { email, name, password });
+  return res.data;
+}
+
 export default {
   login,
   verifyOTP,
   getProfile,
+  signup,
 };

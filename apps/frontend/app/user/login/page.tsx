@@ -6,9 +6,11 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { HiLockClosed, HiShieldCheck } from "react-icons/hi2";
 import { HiMail } from "react-icons/hi";
+import LoadingButton from "@/components/ui/loading/LoadingButton";
 import { useUserStore } from "@/stores/userStore";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
 import userService from "@/services/users/userService";
+
 
 export default function Login() {
     const router = useRouter();
@@ -19,6 +21,7 @@ export default function Login() {
     const [error, setError] = useState("");
     const [timer, setTimer] = useState(60);
     const [resending, setResending] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const otpRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
 
@@ -47,8 +50,10 @@ export default function Login() {
     }, [step, timer]);
 
     const handleLogin = async (event: React.FormEvent) => {
+        if (loading) return; // Prevent multiple submissions
         event.preventDefault();
         setError("");
+        setLoading(true);
         try {
             await UserService.login(email, password);
             toast.success("Login successful");
@@ -56,8 +61,11 @@ export default function Login() {
             setTimer(60);
             setOtp(["", "", "", ""]);
         } catch (error) {
-            setError("Login failed");
-            toast.error("Login failed");
+            const message = getAxiosErrorMessage(error);
+            setError(message);
+            toast.error(message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -78,6 +86,8 @@ export default function Login() {
     };
 
     const handleVerifyOtp = async (e: React.FormEvent) => {
+        if (loading) return; // Prevent multiple submissions
+        setLoading(true);
         e.preventDefault();
         const code = otp.join("");
         if (code.length < 4) {
@@ -95,7 +105,10 @@ export default function Login() {
             const message = getAxiosErrorMessage(err);
             setError(message);
             toast.error(message);
+        } finally {
+            setLoading(false);
         }
+
     };
 
     const handleResendOtp = async () => {
@@ -139,7 +152,7 @@ export default function Login() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition autofill:!bg-neutral-50 dark:autofill:!bg-neutral-800 autofill:!text-neutral-900 dark:autofill:!text-white"
                                     placeholder="you@email.com"
                                 />
                             </div>
@@ -155,18 +168,19 @@ export default function Login() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
-                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition autofill:!bg-neutral-50 dark:autofill:!bg-neutral-800 autofill:!text-neutral-900 dark:autofill:!text-white"
                                     placeholder="Password"
                                 />
                             </div>
                         </div>
                         {error && <div className="text-red-500 mb-2">{error}</div>}
-                        <button
+                        <LoadingButton
                             type="submit"
                             className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow"
+                            loading={loading}
                         >
                             Login
-                        </button>
+                        </LoadingButton>
                     </form>
                 )}
 
@@ -207,12 +221,13 @@ export default function Login() {
                             </button>
                         </div>
                         {error && <div className="text-red-500 mb-2 text-center">{error}</div>}
-                        <button
+                        <LoadingButton
                             type="submit"
                             className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow"
+                            loading={loading}
                         >
                             Verify OTP
-                        </button>
+                        </LoadingButton>
                     </form>
                 )}
             </div>

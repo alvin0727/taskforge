@@ -10,31 +10,31 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const router = useRouter();
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-    if (user) {
-      setLoading(false);
-      return;
+    async function checkAuth() {
+      if (user) {
+        return;
+      }
+      try {
+        const profile = await userService.getProfile();
+        if (profile && isMounted) {
+          setUser(profile);
+        } else if (isMounted) {
+          router.replace("/user/login");
+          toast.error("You must be logged in to access this page.");
+        }
+      } catch {
+        if (isMounted) {
+          router.replace("/user/login");
+          toast.error("You must be logged in to access this page.");
+        }
+      }
     }
-    userService.getProfile().then((profile) => {
-      if (profile && isMounted) {
-        setUser(profile);
-        setLoading(false);
-      } else if (isMounted) {
-        router.replace("/user/login");
-        toast.error("You must be logged in to access this page.");
-      }
-    }).catch(() => {
-      if (isMounted) {
-        router.replace("/user/login");
-        toast.error("You must be logged in to access this page.");
-      }
-    });
+    checkAuth();
     return () => { isMounted = false; };
   }, [setUser, router, user]);
 
-  if (loading && !user) return <Loading />;
   return <>{children}</>;
 }
