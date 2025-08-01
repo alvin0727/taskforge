@@ -19,7 +19,7 @@ async def set_auth_cookie(response: Response, token: str):
         value=token,
         httponly=True,
         secure=False,
-        max_age=60 * 60,  # 1 hour 
+        max_age= 24 * 60 * 60,  # 1 day
         samesite="lax",
         path="/"
     )

@@ -2,9 +2,9 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { 
-  Menu, 
-  X, 
+import {
+  Menu,
+  X,
   Home,
   Kanban,
   CheckSquare,
@@ -27,13 +27,13 @@ import {
 import { useUserStore } from "@/stores/userStore";
 
 const navLinks = [
-  { name: "Dashboard", href: "/protected/dashboard", icon: Home },
-  { name: "Board", href: "/protected/board", icon: Kanban },
-  { name: "Tasks", href: "/protected/task", icon: CheckSquare },
-  { name: "Workflows", href: "/protected/workflow", icon: GitBranch },
-  { name: "Team", href: "/protected/team", icon: Users },
-  { name: "Calendar", href: "/protected/calendar", icon: Calendar },
-  { name: "Analytics", href: "/protected/analytics", icon: BarChart3 },
+  { name: "Dashboard", href: "/protected/dashboard", icon: Home, iconColor: "text-blue-400" },
+  { name: "Board", href: "/protected/board", icon: Kanban, iconColor: "text-purple-400" },
+  { name: "Tasks", href: "/protected/task", icon: CheckSquare, iconColor: "text-green-400" },
+  { name: "Workflows", href: "/protected/workflow", icon: GitBranch, iconColor: "text-orange-400" },
+  { name: "Team", href: "/protected/team", icon: Users, iconColor: "text-pink-400" },
+  { name: "Calendar", href: "/protected/calendar", icon: Calendar, iconColor: "text-red-400" },
+  { name: "Analytics", href: "/protected/analytics", icon: BarChart3, iconColor: "text-cyan-400" },
 ];
 
 const quickActions = [
@@ -48,9 +48,9 @@ const recentProjects = [
 ];
 
 const favorites = [
-  { name: "Sprint Planning", href: "/protected/sprint", icon: Clock },
-  { name: "Archived Projects", href: "/protected/archive", icon: Archive },
-  { name: "Starred Items", href: "/protected/starred", icon: Star },
+  { name: "Sprint Planning", href: "/protected/sprint", icon: Clock, iconColor: "text-yellow-400" },
+  { name: "Archived Projects", href: "/protected/archive", icon: Archive, iconColor: "text-gray-400" },
+  { name: "Starred Items", href: "/protected/starred", icon: Star, iconColor: "text-amber-400" },
 ];
 
 export default function Sidebar() {
@@ -161,16 +161,6 @@ export default function Sidebar() {
         >
           <Menu size={20} />
         </button>
-        
-        <div className="flex items-center gap-3">
-          <button className="p-2 text-neutral-400 hover:text-blue-400 transition-colors">
-            <Search size={20} />
-          </button>
-          <button className="p-2 text-neutral-400 hover:text-blue-400 transition-colors relative">
-            <Bell size={20} />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-          </button>
-        </div>
       </div>
 
       {/* Overlay for mobile when sidebar open */}
@@ -186,14 +176,11 @@ export default function Sidebar() {
       <aside
         ref={sidebarRef}
         className={`
-          /* Mobile */
-          fixed top-0 left-0 h-screen w-72 z-40 bg-neutral-900 border-r border-neutral-800 flex flex-col
-          transition-transform duration-300 ease-in-out
-          ${menuOpen ? "translate-x-0" : "-translate-x-full"}
-
-          /* Desktop */
-          md:relative md:translate-x-0 md:flex md:flex-col md:w-72 md:h-auto md:self-stretch
-        `}
+            fixed top-14 md:top-0 left-0 h-[calc(100vh-3.5rem)] md:h-auto w-72 z-40 bg-neutral-900 border-r border-neutral-800 flex flex-col
+            transition-transform duration-300 ease-in-out
+            ${menuOpen ? "translate-x-0" : "-translate-x-full"}
+            md:relative md:translate-x-0 md:flex md:flex-col md:w-72 md:self-stretch
+          `}
       >
         {/* Header with close button and search */}
         <div className="flex items-center justify-between p-4 border-b border-neutral-800">
@@ -210,7 +197,7 @@ export default function Sidebar() {
             </svg>
             TaskForge
           </Link>
-          
+
           <button
             onClick={closeSidebar}
             aria-label="Close sidebar"
@@ -262,7 +249,7 @@ export default function Sidebar() {
                     className="flex items-center gap-3 text-neutral-300 hover:text-blue-400 hover:bg-neutral-800/50 font-medium py-2.5 px-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 group"
                     onClick={handleNavClick}
                   >
-                    <Icon size={18} className="group-hover:text-blue-400" />
+                    <Icon size={18} className={`${link.iconColor} group-hover:text-blue-400 transition-colors`} />
                     {link.name}
                   </Link>
                 );
@@ -279,7 +266,7 @@ export default function Sidebar() {
               <span>Recent Projects</span>
               {projectsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
-            
+
             {projectsExpanded && (
               <div className="space-y-1 mt-2">
                 {recentProjects.map((project) => (
@@ -306,7 +293,7 @@ export default function Sidebar() {
               <span>Favorites</span>
               {favoritesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
-            
+
             {favoritesExpanded && (
               <div className="space-y-1 mt-2">
                 {favorites.map((item) => {
@@ -318,7 +305,7 @@ export default function Sidebar() {
                       className="flex items-center gap-3 text-neutral-300 hover:text-blue-400 hover:bg-neutral-800/50 py-2 px-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm group"
                       onClick={handleNavClick}
                     >
-                      <Icon size={16} className="group-hover:text-blue-400" />
+                      <Icon size={16} className={`${item.iconColor} group-hover:text-blue-400 transition-colors`} />
                       {item.name}
                     </Link>
                   );
@@ -329,7 +316,7 @@ export default function Sidebar() {
         </div>
 
         {/* User Profile Section */}
-        <div className="border-t border-neutral-800 p-4">
+        <div className="p-2 h-18">
           <div className="relative">
             <button
               ref={avatarRef}
@@ -360,7 +347,7 @@ export default function Sidebar() {
                   className="flex items-center gap-3 w-full text-left px-4 py-2 text-neutral-300 hover:bg-neutral-700 hover:text-blue-400 transition-colors focus:outline-none focus:bg-neutral-700"
                   onClick={handleNavClick}
                 >
-                  <Settings size={16} />
+                  <Settings size={16} className="text-gray-400" />
                   Profile Settings
                 </Link>
                 <hr className="my-2 border-neutral-700" />
