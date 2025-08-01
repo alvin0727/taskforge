@@ -140,6 +140,7 @@ export default function Login() {
                     </p>
                 </div>
                 {step === "login" && (
+                  <>
                     <form onSubmit={handleLogin} className="space-y-5">
                         <div>
                             <label className="block mb-1 text-neutral-800 dark:text-neutral-200 font-medium">Email</label>
@@ -182,6 +183,11 @@ export default function Login() {
                             Login
                         </LoadingButton>
                     </form>
+                    <p className="mt-4 text-center text-sm text-neutral-600 dark:text-neutral-300">
+                        Don't have an account?{' '}
+                        <a href="/user/signup" className="text-blue-600 dark:text-blue-400 underline">Sign Up</a>
+                    </p>
+                  </>
                 )}
 
                 {step === "otp" && (

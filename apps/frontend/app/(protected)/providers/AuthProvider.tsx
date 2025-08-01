@@ -1,8 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useUserStore } from "@/stores/userStore";
 import userService from "@/services/users/userService";
-import Loading from "@/components/layout/loading";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 

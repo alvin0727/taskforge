@@ -1,41 +1,93 @@
 "use client";
+
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/stores/userStore";
-import { HiOutlineClipboardList, HiOutlineUserCircle } from "react-icons/hi";
+import { HiOutlineClipboardList } from "react-icons/hi";
 
 export default function Home() {
   const router = useRouter();
-  const user = useUserStore((state) => state.user);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-white to-blue-300 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 px-4">
-      <div className="max-w-xl w-full bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl p-10 flex flex-col items-center gap-8">
-        <div className="flex flex-col items-center gap-2">
-          <HiOutlineClipboardList className="text-blue-600 dark:text-blue-400" size={48} />
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white text-center">
-            Welcome to <span className="text-blue-600 dark:text-blue-400">TaskForge</span>
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-300 text-center">
-            Organize your tasks, collaborate with your team, and boost your productivity.
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-900 via-blue-950 to-neutral-800">
+      <div className="w-full max-w-3xl mx-auto flex flex-col items-center px-6 py-16 rounded-3xl bg-neutral-900/90 shadow-2xl border border-neutral-800">
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center justify-center rounded-full bg-blue-800/60 p-4 shadow-lg">
+              <HiOutlineClipboardList className="text-blue-400" size={48} />
+            </span>
+            <span className="text-4xl font-extrabold text-white tracking-tight">
+              TaskForge
+            </span>
+          </div>
+          <h2 className="text-center text-2xl md:text-3xl font-bold text-blue-100 max-w-2xl">
+            Organize. Collaborate. Succeed.
+          </h2>
+          <p className="text-center text-lg text-neutral-400 max-w-xl">
+            TaskForge is your all-in-one productivity platform. Manage projects,
+            assign tasks, collaborate with your team, and visualize your workflow
+            in a beautiful, intuitive interface.
           </p>
+          <button
+            className="mt-6 px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold rounded-xl shadow-lg transition text-lg"
+            onClick={() => router.push("/board/6889bb18f74d4181a0eac0a0")}
+          >
+            🚀 Let's Try
+          </button>
         </div>
-        <div className="flex items-center gap-3 bg-blue-50 dark:bg-neutral-800 px-4 py-2 rounded-lg">
-          <HiOutlineUserCircle className="text-blue-600 dark:text-blue-400" size={28} />
-          <div>
-            <div className="font-semibold text-neutral-800 dark:text-white">{user?.name || "User"}</div>
-            <div className="text-sm text-neutral-500 dark:text-neutral-300">{user?.email}</div>
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+          <div className="bg-neutral-800 rounded-2xl p-6 flex flex-col items-center text-center shadow">
+            <span className="text-blue-400 text-2xl mb-2">📋</span>
+            <span className="font-semibold text-white mb-1">
+              Easy Task Management
+            </span>
+            <span className="text-neutral-400 text-sm">
+              Create, assign, and track tasks effortlessly. Stay organized with
+              lists, priorities, and deadlines.
+            </span>
+          </div>
+          <div className="bg-neutral-800 rounded-2xl p-6 flex flex-col items-center text-center shadow">
+            <span className="text-blue-400 text-2xl mb-2">🤝</span>
+            <span className="font-semibold text-white mb-1">
+              Team Collaboration
+            </span>
+            <span className="text-neutral-400 text-sm">
+              Collaborate in real-time, share files, comment, and keep everyone
+              aligned in one workspace.
+            </span>
+          </div>
+          <div className="bg-neutral-800 rounded-2xl p-6 flex flex-col items-center text-center shadow">
+            <span className="text-blue-400 text-2xl mb-2">📈</span>
+            <span className="font-semibold text-white mb-1">
+              Progress Tracking
+            </span>
+            <span className="text-neutral-400 text-sm">
+              Visualize your workflow with boards, analytics, and progress charts
+              to monitor your team's success.
+            </span>
           </div>
         </div>
-        <button
-          className="mt-4 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition text-lg"
-          onClick={() => router.push("/board/6889bb18f74d4181a0eac0a0")}
-        >
-          🚀 Go to My Board
-        </button>
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          <div className="bg-neutral-800 rounded-2xl p-6 flex flex-col items-center text-center shadow">
+            <span className="text-blue-400 text-2xl mb-2">🔔</span>
+            <span className="font-semibold text-white mb-1">
+              Smart Notifications
+            </span>
+            <span className="text-neutral-400 text-sm">
+              Get notified instantly about important updates, deadlines, and
+              mentions.
+            </span>
+          </div>
+          <div className="bg-neutral-800 rounded-2xl p-6 flex flex-col items-center text-center shadow">
+            <span className="text-blue-400 text-2xl mb-2">🔒</span>
+            <span className="font-semibold text-white mb-1">
+              Secure & Reliable
+            </span>
+            <span className="text-neutral-400 text-sm">
+              Your data is protected with enterprise-grade security and daily
+              backups.
+            </span>
+          </div>
+        </div>
       </div>
-      <footer className="mt-10 text-neutral-400 text-sm text-center">
-        &copy; {new Date().getFullYear()} TaskForge. All rights reserved.
-      </footer>
     </div>
   );
 }
