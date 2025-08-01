@@ -52,3 +52,7 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     last_login: Optional[datetime] = None
+
+class UserWithMessage(BaseModel):
+    message: str
+    user: UserResponse
