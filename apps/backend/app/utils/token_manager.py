@@ -2,7 +2,7 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from app.config.config import SECRET_KEY, REFRESH_SECRET_KEY, ALGORITHM
 
-def create_token(user_id: str, email: str, is_verified: bool, expires_minutes: int = 60):
+def create_token(user_id: str, email: str, is_verified: bool, expires_minutes: int = 60 * 24):
     expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
     to_encode = {"id": user_id, "email": email, "isVerified": is_verified, "exp": expire}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

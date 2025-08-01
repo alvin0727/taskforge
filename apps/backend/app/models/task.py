@@ -1,26 +1,83 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 from datetime import datetime
+from typing import Optional, List
 from bson import ObjectId
-from app.utils.const_value import TaskStatus
-from zoneinfo import ZoneInfo
+from pydantic import BaseModel, Field
+from app.db.base import BaseDocument, PyObjectId
+from app.db.enums import TaskStatus, TaskPriority
 
-class Task(BaseModel):
-    id: ObjectId = Field(default_factory=ObjectId, alias="_id")
-    workflow_id: str  # Foreign key ke Workflow
-    title: str
+class TaskLabel(BaseModel):
+    name: str
+    color: str
+
+class TaskAttachment(BaseModel):
+    filename: str
+    file_url: str
+    file_size: int
+    mime_type: str
+    uploaded_by: PyObjectId
+    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+
+class TaskComment(BaseModel):
+    id: str = Field(default_factory=lambda: str(ObjectId()))
+    content: str
+    author_id: PyObjectId
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
+    mentions: List[PyObjectId] = []
+
+class TaskTimeLog(BaseModel):
+    user_id: PyObjectId
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    duration_minutes: Optional[int] = None
     description: Optional[str] = None
-    status: TaskStatus = Field(default=TaskStatus.TODO)
-    is_completed: bool = Field(default=False)
-    dependencies: List[str] = Field(default_factory=list)
-    order: int = Field(default=0)
-    parent_id: Optional[str] = None  # None if root task, else id of parent task
-    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(ZoneInfo("Asia/Jakarta")))
 
-    model_config = {
-       "validate_by_name": True,
-       "arbitrary_types_allowed": True,
-       "json_encoders": {
-           ObjectId: str
-       }
-    }
+class Task(BaseDocument):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    status: TaskStatus = TaskStatus.TODO
+    priority: TaskPriority = TaskPriority.MEDIUM
+    project_id: PyObjectId
+    board_id: Optional[PyObjectId] = None
+    column_id: Optional[str] = None
+    creator_id: PyObjectId
+    assignee_id: Optional[PyObjectId] = None
+    reviewers: List[PyObjectId] = []
+    due_date: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    estimated_hours: Optional[float] = None
+    actual_hours: Optional[float] = None
+    labels: List[TaskLabel] = []
+    attachments: List[TaskAttachment] = []
+    comments: List[TaskComment] = []
+    time_logs: List[TaskTimeLog] = []
+    subtasks: List[PyObjectId] = []
+    parent_task_id: Optional[PyObjectId] = None
+    dependencies: List[PyObjectId] = []
+    position: float = 0.0
+    archived: bool = False
+
+class TaskCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    priority: TaskPriority = TaskPriority.MEDIUM
+    project_id: str
+    board_id: Optional[str] = None
+    column_id: Optional[str] = None
+    assignee_id: Optional[str] = None
+    due_date: Optional[datetime] = None
+    estimated_hours: Optional[float] = None
+    labels: List[TaskLabel] = []
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[TaskStatus] = None
+    priority: Optional[TaskPriority] = None
+    assignee_id: Optional[str] = None
+    due_date: Optional[datetime] = None
+    estimated_hours: Optional[float] = None
+    labels: Optional[List[TaskLabel]] = None
+    column_id: Optional[str] = None
+    position: Optional[float] = None
