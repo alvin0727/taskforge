@@ -15,7 +15,6 @@ import {
   Settings,
   Plus,
   Search,
-  Bell,
   ChevronDown,
   ChevronRight,
   Archive,

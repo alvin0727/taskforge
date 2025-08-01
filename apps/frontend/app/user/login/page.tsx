@@ -11,7 +11,6 @@ import { useUserStore } from "@/stores/userStore";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
 import userService from "@/services/users/userService";
 
-
 export default function Login() {
     const router = useRouter();
     const [step, setStep] = useState<"login" | "otp">("login");
@@ -108,7 +107,6 @@ export default function Login() {
         } finally {
             setLoading(false);
         }
-
     };
 
     const handleResendOtp = async () => {
@@ -124,77 +122,117 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900">
-            <div className="w-full max-w-md p-8 rounded-2xl shadow-2xl bg-white dark:bg-neutral-900">
+        <div className="min-h-screen flex items-center justify-center bg-neutral-950 relative overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-neutral-950"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_70%)]"></div>
+            
+            {/* TaskForge Logo Pattern */}
+            <div className="absolute top-10 left-10 opacity-10">
+                <svg width="48" height="48" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="28" height="28" rx="6" fill="#2563EB" />
+                    <rect x="6" y="7" width="4" height="14" rx="2" fill="white" />
+                    <rect x="12" y="7" width="4" height="10" rx="2" fill="white" />
+                    <rect x="18" y="7" width="4" height="6" rx="2" fill="white" />
+                </svg>
+            </div>
+
+            <div className="w-full max-w-md p-8 rounded-2xl shadow-2xl bg-neutral-900 border border-neutral-800 relative z-10">
+                {/* Header */}
                 <div className="flex flex-col items-center mb-8">
-                    <div className="bg-blue-600 text-white rounded-full p-4 shadow-lg mb-2">
-                        {step === "login" ? <HiLockClosed size={36} /> : <HiShieldCheck size={36} />}
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-lg mb-4">
+                        {step === "login" ? <HiLockClosed size={32} /> : <HiShieldCheck size={32} />}
                     </div>
-                    <h2 className="text-3xl font-bold text-neutral-900 dark:text-white mb-1">
-                        {step === "login" ? "Login" : "OTP Verification"}
+                    
+                    {/* TaskForge Brand */}
+                    <div className="flex items-center gap-2 mb-2">
+                        <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="28" height="28" rx="6" fill="#2563EB" />
+                            <rect x="6" y="7" width="4" height="14" rx="2" fill="white" />
+                            <rect x="12" y="7" width="4" height="10" rx="2" fill="white" />
+                            <rect x="18" y="7" width="4" height="6" rx="2" fill="white" />
+                        </svg>
+                        <span className="text-xl font-bold text-blue-400">TaskForge</span>
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-white mb-1">
+                        {step === "login" ? "Welcome Back" : "Verify Your Identity"}
                     </h2>
-                    <p className="text-neutral-500 dark:text-neutral-300 text-sm">
+                    <p className="text-neutral-400 text-sm text-center">
                         {step === "login"
-                            ? "Sign in to your TaskForge account"
-                            : "Enter the 4-digit OTP code sent to your email"}
+                            ? "Sign in to continue to your workspace"
+                            : "Enter the 4-digit code sent to your email"}
                     </p>
                 </div>
+
                 {step === "login" && (
-                  <>
-                    <form onSubmit={handleLogin} className="space-y-5">
-                        <div>
-                            <label className="block mb-1 text-neutral-800 dark:text-neutral-200 font-medium">Email</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500">
-                                    <HiMail size={20} />
-                                </span>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition autofill:!bg-neutral-50 dark:autofill:!bg-neutral-800 autofill:!text-neutral-900 dark:autofill:!text-white"
-                                    placeholder="you@email.com"
-                                />
+                    <>
+                        <form onSubmit={handleLogin} className="space-y-5">
+                            <div>
+                                <label className="block mb-2 text-neutral-200 font-medium text-sm">Email Address</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400">
+                                        <HiMail size={18} />
+                                    </span>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                        placeholder="you@company.com"
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label className="block mb-1 text-neutral-800 dark:text-neutral-200 font-medium">Password</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500">
-                                    <HiLockClosed size={20} />
-                                </span>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition autofill:!bg-neutral-50 dark:autofill:!bg-neutral-800 autofill:!text-neutral-900 dark:autofill:!text-white"
-                                    placeholder="Password"
-                                />
+                            
+                            <div>
+                                <label className="block mb-2 text-neutral-200 font-medium text-sm">Password</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400">
+                                        <HiLockClosed size={18} />
+                                    </span>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-neutral-700 bg-neutral-800 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                                        placeholder="Enter your password"
+                                    />
+                                </div>
                             </div>
+
+                            {error && (
+                                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            <LoadingButton
+                                type="submit"
+                                className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all shadow-lg hover:shadow-blue-500/25"
+                                loading={loading}
+                            >
+                                Sign In
+                            </LoadingButton>
+                        </form>
+
+                        <div className="mt-6 pt-6 border-t border-neutral-800">
+                            <p className="text-center text-sm text-neutral-400">
+                                Don't have an account?{' '}
+                                <a href="/user/signup" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                                    Create Account
+                                </a>
+                            </p>
                         </div>
-                        {error && <div className="text-red-500 mb-2">{error}</div>}
-                        <LoadingButton
-                            type="submit"
-                            className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow"
-                            loading={loading}
-                        >
-                            Login
-                        </LoadingButton>
-                    </form>
-                    <p className="mt-4 text-center text-sm text-neutral-600 dark:text-neutral-300">
-                        Don't have an account?{' '}
-                        <a href="/user/signup" className="text-blue-600 dark:text-blue-400 underline">Sign Up</a>
-                    </p>
-                  </>
+                    </>
                 )}
 
                 {step === "otp" && (
-                    <form onSubmit={handleVerifyOtp} className="space-y-5">
+                    <form onSubmit={handleVerifyOtp} className="space-y-6">
                         <div>
-                            <label className="block mb-3 text-neutral-800 dark:text-neutral-200 font-medium text-center">
-                                OTP Code
+                            <label className="block mb-4 text-neutral-200 font-medium text-center">
+                                Verification Code
                             </label>
                             <div className="flex justify-center gap-3">
                                 {otp.map((val, idx) => (
@@ -211,29 +249,44 @@ export default function Login() {
                                                 otpRefs[idx - 1].current?.focus();
                                             }
                                         }}
-                                        className="w-14 h-14 text-center text-2xl rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                        className="w-14 h-14 text-center text-xl font-semibold rounded-lg border border-neutral-700 bg-neutral-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
                                     />
                                 ))}
                             </div>
                         </div>
-                        <div className="flex justify-between items-center">
+
+                        <div className="flex justify-center">
                             <button
                                 type="button"
                                 onClick={handleResendOtp}
                                 disabled={timer > 0 || resending}
-                                className={`text-blue-600 font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed`}
+                                className="text-blue-400 hover:text-blue-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-blue-400"
                             >
-                                Resend OTP {timer > 0 && `in ${timer}s`}
+                                {resending ? "Sending..." : timer > 0 ? `Resend code in ${timer}s` : "Resend code"}
                             </button>
                         </div>
-                        {error && <div className="text-red-500 mb-2 text-center">{error}</div>}
+
+                        {error && (
+                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+                                {error}
+                            </div>
+                        )}
+
                         <LoadingButton
                             type="submit"
-                            className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow"
+                            className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all shadow-lg hover:shadow-blue-500/25"
                             loading={loading}
                         >
-                            Verify OTP
+                            Verify Code
                         </LoadingButton>
+
+                        <button
+                            type="button"
+                            onClick={() => setStep("login")}
+                            className="w-full py-2 text-neutral-400 hover:text-neutral-300 font-medium transition-colors"
+                        >
+                            ← Back to login
+                        </button>
                     </form>
                 )}
             </div>
