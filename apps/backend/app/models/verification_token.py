@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from app.db.base import BaseDocument, PyObjectId
 
+
 class OTPMetadata(BaseModel):
     attempts: int = 0
     max_attempts: int = 3
@@ -10,6 +11,7 @@ class OTPMetadata(BaseModel):
     is_blocked: bool = False
     block_until: Optional[datetime] = None
     last_generated: Optional[datetime] = None
+
 
 class VerificationToken(BaseDocument):
     user_id: PyObjectId = Field(..., description="User ID (ObjectId)")
@@ -21,6 +23,7 @@ class VerificationToken(BaseDocument):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+
 class VerificationTokenCreate(BaseModel):
     user_id: PyObjectId
     token: str
@@ -28,11 +31,13 @@ class VerificationTokenCreate(BaseModel):
     otp_metadata: Optional[OTPMetadata] = None
     expires_at: datetime
 
+
 class VerificationTokenUpdate(BaseModel):
     otp_metadata: Optional[OTPMetadata] = None
     is_used: Optional[bool] = None
     expires_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
 
 class VerificationTokenResponse(BaseModel):
     id: str

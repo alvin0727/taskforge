@@ -17,9 +17,11 @@ conf = ConnectionConfig(
 
 fast_mail = FastMail(conf)
 
+
 def generate_otp() -> str:
     # Create a 4-digit OTP
     return str(secrets.randbelow(9000) + 1000)
+
 
 async def send_otp_email(email: str, otp: str) -> None:
     html = f"""

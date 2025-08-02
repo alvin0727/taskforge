@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, EmailStr
 from app.db.base import BaseDocument, PyObjectId
 from app.db.enums import InvitationStatus, UserRole
 
+
 class OrganizationInvitation(BaseDocument):
     """Invitation to join an organization"""
     organization_id: PyObjectId

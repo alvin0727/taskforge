@@ -20,7 +20,7 @@ __all__ = [
     # Project models
     "Project", "ProjectCreate", "ProjectUpdate",
     # Board models
-    "Board", "BoardCreate", "BoardUpdate", 
+    "Board", "BoardCreate", "BoardUpdate",
     # Task models
     "Task", "TaskCreate", "TaskUpdate",
     # Activity models
@@ -33,5 +33,5 @@ __all__ = [
     "ProjectStats", "UserStats", "DashboardStats",
     # Favorites models
     "UserFavorite", "FavoriteCreate"
-    
+
 ]

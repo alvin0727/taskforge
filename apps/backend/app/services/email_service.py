@@ -19,8 +19,10 @@ conf = ConnectionConfig(
 
 fast_mail = FastMail(conf)
 
+
 def generate_verification_token() -> str:
     return secrets.token_hex(32)
+
 
 async def send_verification_email(email: str, token: str):
     verification_link = f"{FRONTEND_URL}/user/verify-email?token={token}"
@@ -107,20 +109,21 @@ async def send_verification_email(email: str, token: str):
         subtype="html"
     )
     await fast_mail.send_message(message)
-    
+
+
 async def send_invitation_email(
-    email: str, 
-    organization_name: str, 
-    inviter_name: str, 
-    token: str, 
+    email: str,
+    organization_name: str,
+    inviter_name: str,
+    token: str,
     role: str = "member",
     message: str = None
 ):
     """Send invitation email with smart routing based on user existence"""
-    
+
     # Check if user already exists
     existing_user = await db["users"].find_one({"email": email})
-    
+
     if existing_user:
         # Existing user - direct accept invitation
         invitation_link = f"{FRONTEND_URL}/user/login?token={token}"
@@ -135,7 +138,7 @@ async def send_invitation_email(
         instruction = "Click the button below to create your account and join the organization:"
         header_title = f"Welcome to {organization_name}"
         header_subtitle = "Create your account to get started"
-    
+
     # Personal message section
     personal_message_html = ""
     if message:
@@ -150,7 +153,7 @@ async def send_invitation_email(
                 </div>
             </div>
         """
-    
+
     html = f"""
         <!DOCTYPE html>
         <html>
@@ -270,10 +273,11 @@ async def send_invitation_email(
     )
     await fast_mail.send_message(message)
 
+
 async def send_password_reset_email(email: str, token: str, user_name: str = None):
     """Send password reset email"""
     reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
-    
+
     html = f"""
         <!DOCTYPE html>
         <html>
@@ -354,6 +358,7 @@ async def send_password_reset_email(email: str, token: str, user_name: str = Non
     )
     await fast_mail.send_message(message)
 
+
 async def send_notification_email(
     email: str,
     subject: str,
@@ -364,7 +369,7 @@ async def send_notification_email(
     notification_type: str = "info"  # "info", "success", "warning", "error"
 ):
     """Send general notification email"""
-    
+
     # Color scheme based on notification type
     color_schemes = {
         "info": {
@@ -388,9 +393,9 @@ async def send_notification_email(
             "icon": "❌"
         }
     }
-    
+
     scheme = color_schemes.get(notification_type, color_schemes["info"])
-    
+
     # Action button section
     action_button_html = ""
     if action_text and action_link:
@@ -402,7 +407,7 @@ async def send_notification_email(
                 </a>
             </div>
         """
-    
+
     html = f"""
         <!DOCTYPE html>
         <html>

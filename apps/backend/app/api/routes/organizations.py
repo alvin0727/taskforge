@@ -12,6 +12,7 @@ from app.utils.logger import logger
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 db = get_db()
 
+
 @router.post("/create-team")
 async def create_team_organization(
     request: org_req.CreateTeamOrganizationRequest,
@@ -19,21 +20,21 @@ async def create_team_organization(
 ):
     """Create new team organization for existing user"""
     user_id = ObjectId(current_user["id"])
-    
+
     organization_id = await OrganizationService.create_team_organization(
         owner_id=user_id,
         name=request.name,
         description=request.description
     )
-    
+
     await OrganizationService.add_user_to_organization(
         user_id=user_id,
         organization_id=organization_id,
         role=UserRole.ADMIN
     )
-    
+
     org = await db["organizations"].find_one({"_id": organization_id})
-    
+
     return {
         "message": "Team organization created successfully",
         "organization": {
@@ -44,16 +45,18 @@ async def create_team_organization(
         }
     }
 
+
 @router.get("/my-organizations")
 async def get_my_organizations(current_user: dict = Depends(get_current_user)):
     """Get all organizations user belongs to"""
     user_id = ObjectId(current_user["id"])
     organizations = await OrganizationService.get_user_organizations(user_id)
-    
+
     return {
         "organizations": organizations,
         "total": len(organizations)
     }
+
 
 @router.post("/switch")
 async def switch_organization(
@@ -63,9 +66,9 @@ async def switch_organization(
     """Switch user's active organization"""
     user_id = ObjectId(current_user["id"])
     organization_id = ObjectId(request.organization_id)
-    
+
     await OrganizationService.switch_active_organization(user_id, organization_id)
-    
+
     return {"message": "Organization switched successfully"}
 
 
@@ -78,28 +81,32 @@ async def get_organization_details(
     # Verify user has access to this organization
     user_id = ObjectId(current_user["id"])
     organization_id = ObjectId(org_id)
-    
+
     user = await db["users"].find_one({"_id": user_id})
     user_orgs = user.get("organizations", [])
-    
+
     has_access = any(
-        org.get("organization_id") == organization_id and org.get("status") == "active"
+        org.get("organization_id") == organization_id and org.get(
+            "status") == "active"
         for org in user_orgs
     )
-    
+
     if not has_access:
-        raise HTTPException(status_code=403, detail={"message": "Access denied"})
-    
+        raise HTTPException(status_code=403, detail={
+                            "message": "Access denied"})
+
     org = await db["organizations"].find_one({"_id": organization_id})
     if not org:
-        raise HTTPException(status_code=404, detail={"message": "Organization not found"})
-    
+        raise HTTPException(status_code=404, detail={
+                            "message": "Organization not found"})
+
     # Get user's role in this organization
     user_role = next(
-        (uo["role"] for uo in user_orgs if uo["organization_id"] == organization_id),
+        (uo["role"]
+         for uo in user_orgs if uo["organization_id"] == organization_id),
         None
     )
-    
+
     return {
         "id": str(org["_id"]),
         "name": org["name"],
@@ -113,6 +120,7 @@ async def get_organization_details(
         "created_at": org["created_at"]
     }
 
+
 @router.post("/{org_id}/invite")
 async def invite_member(
     org_id: str,
@@ -123,20 +131,23 @@ async def invite_member(
     # Check permissions
     user_id = ObjectId(current_user["id"])
     organization_id = ObjectId(org_id)
-    
+
     # Verify user can invite (admin/manager role)
     user = await db["users"].find_one({"_id": user_id})
     user_orgs = user.get("organizations", [])
-    
+
     user_role = next(
-        (uo["role"] for uo in user_orgs if uo["organization_id"] == organization_id),
+        (uo["role"]
+         for uo in user_orgs if uo["organization_id"] == organization_id),
         None
     )
-    
+
     if user_role not in [UserRole.ADMIN, UserRole.MANAGER]:
-        logger.warning(f"User {user_id} attempted to invite member to organization {organization_id} without permission")
-        raise HTTPException(status_code=403, detail={"message": "Insufficient permissions to invite members"})
-    
+        logger.warning(
+            f"User {user_id} attempted to invite member to organization {organization_id} without permission")
+        raise HTTPException(status_code=403, detail={
+                            "message": "Insufficient permissions to invite members"})
+
     invitation_token = await OrganizationService.invite_user_to_organization(
         organization_id=organization_id,
         inviter_name=user["name"],
@@ -145,12 +156,13 @@ async def invite_member(
         invited_by=user_id,
         message=request.message
     )
-    
+
     return {
         "message": f"Invitation sent to {request.email}",
         "invitation_token": invitation_token
     }
-    
+
+
 @router.get("/invitations/{token}")
 async def get_invitation_details(token: str):
     invitation = await db["organization_invitations"].find_one({
@@ -159,18 +171,20 @@ async def get_invitation_details(token: str):
         "status": InvitationStatus.PENDING
     })
     if not invitation:
-        raise HTTPException(status_code=404, detail={"message": "Invalid or expired invitation token"})
-    
+        raise HTTPException(status_code=404, detail={
+                            "message": "Invalid or expired invitation token"})
+
     # Get organization name from database
     org = await db["organizations"].find_one({"_id": ObjectId(invitation["organization_id"])})
     organization_name = org["name"] if org else ""
-    
+
     return {
         "email": invitation["email"],
         "organization_name": organization_name,
         "role": invitation["role"],
         "message": invitation.get("message", "")
     }
+
 
 @router.post("/accept-invitation/{token}")
 async def accept_invitation(
@@ -179,9 +193,9 @@ async def accept_invitation(
 ):
     """Accept organization invitation (for existing users)"""
     user_id = ObjectId(current_user["id"])
-    
+
     result = await OrganizationService.accept_invitation(token, user_id)
-    
+
     return {
         "message": result["message"],
         "organization": {

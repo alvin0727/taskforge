@@ -19,16 +19,18 @@ db = get_db()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 org_service = OrganizationService()
 
+
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
     return pwd_context.hash(password)
 
+
 class UserService:
-    
+
     @staticmethod
     async def signup_hybrid(
-        email: str, 
-        name: str, 
+        email: str,
+        name: str,
         password: str,
         signup_type: str = "personal",  # personal, team, invitation
         organization_data: Optional[Dict[str, Any]] = None,
@@ -47,7 +49,8 @@ class UserService:
             # Check if the email is already registered
             existing_user = await db["users"].find_one({"email": email})
             if existing_user:
-                raise HTTPException(status_code=400, detail={"message": "Email already registered"})
+                raise HTTPException(status_code=400, detail={
+                                    "message": "Email already registered"})
 
             now = datetime.utcnow()
 
@@ -120,7 +123,8 @@ class UserService:
 
                 # Send verification email
                 await send_verification_email(email, token)
-                logger.info(f"User registered successfully with ID: {user_result.inserted_id}")
+                logger.info(
+                    f"User registered successfully with ID: {user_result.inserted_id}")
 
                 return {
                     "user_id": str(user_id),
@@ -138,7 +142,8 @@ class UserService:
                 # Rollback verification token if created
                 if verification_token_id:
                     await db["verification_tokens"].delete_one({"_id": verification_token_id})
-                raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail=f"Signup failed: {str(e)}")
         except HTTPException:
             # Rollback user/org if HTTPException in outer try
             if organization_id:
@@ -162,14 +167,16 @@ class UserService:
             verification_token = await db["verification_tokens"].find_one({"token": token})
             if not verification_token:
                 logger.warning(f"Invalid verification token: {token}")
-                raise HTTPException(status_code=400, detail={"message": "Invalid or expired token"})
+                raise HTTPException(status_code=400, detail={
+                                    "message": "Invalid or expired token"})
 
             await db["users"].update_one(
                 {"_id": verification_token["user_id"]},
                 {"$set": {"is_verified": True, "updated_at": datetime.utcnow()}}
             )
             await db["verification_tokens"].delete_one({"_id": verification_token["_id"]})
-            logger.info(f"Email verified successfully for user ID: {verification_token['user_id']}")
+            logger.info(
+                f"Email verified successfully for user ID: {verification_token['user_id']}")
             return True
         except HTTPException:
             raise
@@ -190,7 +197,8 @@ class UserService:
             user = await db["users"].find_one({"email": email})
             if not user or user.get("is_verified", False):
                 logger.warning(f"User not found or already verified: {email}")
-                raise HTTPException(status_code=404, detail={"message": "User not found or already verified"})
+                raise HTTPException(status_code=404, detail={
+                                    "message": "User not found or already verified"})
 
             # Delete only existing email verification tokens for this user
             await db["verification_tokens"].delete_many({
@@ -212,7 +220,7 @@ class UserService:
             logger.info(f"Verification email resent to: {email}")
             return True
         except HTTPException:
-            raise 
+            raise
         except Exception as e:
             logger.error(f"Error resend verification email: {e}")
             return False
@@ -231,7 +239,8 @@ class UserService:
             user = await db["users"].find_one({"email": email})
             if not user or not pwd_context.verify(password, user["password_hash"]):
                 logger.warning(f"Login failed for email: {email}")
-                raise HTTPException(status_code=401, detail={"message": "Invalid email or password"})
+                raise HTTPException(status_code=401, detail={
+                                    "message": "Invalid email or password"})
 
             # Check if user is currently blocked from OTP requests
             existing_otp_token = await db["verification_tokens"].find_one({
@@ -246,7 +255,8 @@ class UserService:
                 now = datetime.utcnow()
                 if block_until.tzinfo is not None:
                     block_until = block_until.replace(tzinfo=None)
-                block_time_left = -(-int((block_until - now).total_seconds()) // 60)  # ceil division
+                block_time_left = - \
+                    (-int((block_until - now).total_seconds()) // 60)  # ceil division
                 if block_time_left > 0:
                     raise HTTPException(
                         status_code=429,
@@ -289,10 +299,11 @@ class UserService:
             logger.info(f"OTP sent to email: {email}")
             return True
         except HTTPException:
-            raise 
+            raise
         except Exception as e:
             logger.error(f"Error logging in user: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+            raise HTTPException(
+                status_code=500, detail="Internal server error")
 
     @staticmethod
     async def verify_otp(email: str, otp: str, response: Response) -> bool:
@@ -300,9 +311,9 @@ class UserService:
             user = await db["users"].find_one({"email": email})
             if not user:
                 logger.warning(f"User not found for email: {email}")
-                raise HTTPException(status_code=404, detail={"message": "User not found"})
-            
-            
+                raise HTTPException(status_code=404, detail={
+                                    "message": "User not found"})
+
             verification_token = await db["verification_tokens"].find_one({
                 "user_id": user["_id"],
                 "type": "otp"
@@ -310,13 +321,15 @@ class UserService:
 
             if not verification_token:
                 logger.warning(f"Invalid OTP for email: {email}")
-                raise HTTPException(status_code=400, detail={"message": "Invalid OTP, not found or expired"})
+                raise HTTPException(status_code=400, detail={
+                                    "message": "Invalid OTP, not found or expired"})
 
             otp_meta = verification_token.get("otp_metadata", {})
             if otp_meta.get("is_blocked") and otp_meta.get("block_until") and otp_meta["block_until"] > datetime.utcnow():
                 block_until = otp_meta["block_until"]
                 now = datetime.utcnow()
-                block_time_left = -(-int((block_until - now).total_seconds()) // 60)  # ceil division
+                block_time_left = - \
+                    (-int((block_until - now).total_seconds()) // 60)  # ceil division
                 if block_time_left > 0:
                     raise HTTPException(
                         status_code=429,
@@ -335,10 +348,13 @@ class UserService:
                 # Check if attempts exceed max allowed
                 if otp_meta["attempts"] >= otp_meta.get("max_attempts", 3):
                     otp_meta["is_blocked"] = True
-                    otp_meta["block_until"] = datetime.utcnow() + timedelta(minutes=15)
-                    verification_token["expires_at"] = datetime.utcnow() + timedelta(minutes=15)
+                    otp_meta["block_until"] = datetime.utcnow() + \
+                        timedelta(minutes=15)
+                    verification_token["expires_at"] = datetime.utcnow(
+                    ) + timedelta(minutes=15)
 
-                remaining_attempts = otp_meta.get("max_attempts", 3) - otp_meta["attempts"]
+                remaining_attempts = otp_meta.get(
+                    "max_attempts", 3) - otp_meta["attempts"]
                 await db["verification_tokens"].update_one(
                     {"_id": verification_token["_id"]},
                     {
@@ -350,7 +366,8 @@ class UserService:
                 )
 
                 if otp_meta["is_blocked"]:
-                    logger.warning(f"User {email} blocked due to too many failed OTP attempts")
+                    logger.warning(
+                        f"User {email} blocked due to too many failed OTP attempts")
                     raise HTTPException(
                         status_code=429,
                         detail={
@@ -400,11 +417,12 @@ class UserService:
                 "user": response.dict()
             }
         except HTTPException:
-            raise 
+            raise
         except Exception as e:
             logger.error(f"Error logging in user: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
-        
+            raise HTTPException(
+                status_code=500, detail="Internal server error")
+
     @staticmethod
     async def resend_otp(email: str) -> bool:
         """
@@ -418,9 +436,9 @@ class UserService:
             user = await db["users"].find_one({"email": email})
             if not user:
                 logger.warning(f"User not found for email: {email}")
-                raise HTTPException(status_code=404, detail={"message": "User not found"})
-            
-            
+                raise HTTPException(status_code=404, detail={
+                                    "message": "User not found"})
+
             existing_token = await db["verification_tokens"].find_one({
                 "user_id": user["_id"],
                 "type": "otp"
@@ -428,13 +446,15 @@ class UserService:
 
             if not existing_token:
                 logger.warning(f"Invalid OTP for email: {email}")
-                raise HTTPException(status_code=400, detail={"message": "Invalid OTP, not found or expired"})
+                raise HTTPException(status_code=400, detail={
+                                    "message": "Invalid OTP, not found or expired"})
 
             otp_meta = existing_token.get("otp_metadata", {})
             if otp_meta.get("is_blocked") and otp_meta.get("block_until") and otp_meta["block_until"] > datetime.utcnow():
                 block_until = otp_meta["block_until"]
                 now = datetime.utcnow()
-                block_time_left = -(-int((block_until - now).total_seconds()) // 60)  # ceil division
+                block_time_left = - \
+                    (-int((block_until - now).total_seconds()) // 60)  # ceil division
                 if block_time_left > 0:
                     raise HTTPException(
                         status_code=429,
@@ -449,11 +469,13 @@ class UserService:
                 now_utc = datetime.utcnow()
                 if last_generated.tzinfo is not None:
                     last_generated = last_generated.replace(tzinfo=None)
-                time_since_last_otp = (now_utc - last_generated).total_seconds()
+                time_since_last_otp = (
+                    now_utc - last_generated).total_seconds()
                 one_minute_in_seconds = 60
 
                 if time_since_last_otp < one_minute_in_seconds:
-                    wait_time = int(one_minute_in_seconds - time_since_last_otp)
+                    wait_time = int(one_minute_in_seconds -
+                                    time_since_last_otp)
                     logger.warning(f"User {email} exceeded resend rate limit")
                     raise HTTPException(
                         status_code=429,
@@ -479,12 +501,11 @@ class UserService:
                 )
             return True
         except HTTPException:
-            raise 
+            raise
         except Exception as e:
             logger.error(f"Error resending OTP: {e}")
             return False
 
-    
     @staticmethod
     async def get_user_by_id(user_id: str) -> User:
         """
@@ -498,7 +519,8 @@ class UserService:
             user = await db["users"].find_one({"_id": ObjectId(user_id)})
             if not user:
                 logger.warning(f"User not found for ID: {user_id}")
-                raise HTTPException(status_code=404, detail={"message": "User not found"})
+                raise HTTPException(status_code=404, detail={
+                                    "message": "User not found"})
 
             # Ensure profile is a UserProfile instance
             profile = user.get("profile")
@@ -522,8 +544,9 @@ class UserService:
             raise
         except Exception as e:
             logger.error(f"Error fetching user by ID: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
-        
+            raise HTTPException(
+                status_code=500, detail="Internal server error")
+
     @staticmethod
     async def refresh_user_session(user_id: str, response: Response) -> None:
         """
@@ -543,7 +566,8 @@ class UserService:
             user = await db["users"].find_one({"_id": ObjectId(user_id)})
             if not user:
                 logger.warning(f"User not found for ID: {user_id}")
-                raise HTTPException(status_code=404, detail={"message": "User not found"})
+                raise HTTPException(status_code=404, detail={
+                                    "message": "User not found"})
 
             # Update user's last_login
             now = datetime.utcnow()
@@ -571,4 +595,5 @@ class UserService:
             raise
         except Exception as e:
             logger.error(f"Error refreshing user session: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+            raise HTTPException(
+                status_code=500, detail="Internal server error")

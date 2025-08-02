@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 from app.db.base import BaseDocument, PyObjectId
 
+
 class ProjectStats(BaseDocument):
     project_id: PyObjectId
     date: date
@@ -14,6 +15,7 @@ class ProjectStats(BaseDocument):
     completion_rate: float = 0.0
     average_completion_time: Optional[float] = None
 
+
 class UserStats(BaseDocument):
     user_id: PyObjectId
     date: date
@@ -22,6 +24,7 @@ class UserStats(BaseDocument):
     hours_logged: float = 0.0
     projects_active: int = 0
     comments_made: int = 0
+
 
 class DashboardStats(BaseModel):
     total_tasks: int

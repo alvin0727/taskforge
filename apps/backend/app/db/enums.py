@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class TaskStatus(str, Enum):
     BACKLOG = "backlog"
     TODO = "todo"
@@ -8,11 +9,13 @@ class TaskStatus(str, Enum):
     DONE = "done"
     CANCELED = "canceled"
 
+
 class TaskPriority(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     URGENT = "urgent"
+
 
 class ProjectStatus(str, Enum):
     PLANNING = "planning"
@@ -21,11 +24,13 @@ class ProjectStatus(str, Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
+
 class UserRole(str, Enum):
     ADMIN = "admin"
     MANAGER = "manager"
     MEMBER = "member"
     VIEWER = "viewer"
+
 
 class ActivityType(str, Enum):
     TASK_CREATED = "task_created"
@@ -38,7 +43,8 @@ class ActivityType(str, Enum):
     USER_JOINED = "user_joined"
     FILE_UPLOADED = "file_uploaded"
     BOARD_UPDATED = "board_updated"
-    
+
+
 class NotificationType(str, Enum):
     TASK_ASSIGNED = "task_assigned"
     TASK_DUE = "task_due"
@@ -47,6 +53,7 @@ class NotificationType(str, Enum):
     PROJECT_UPDATE = "project_update"
     DEADLINE_REMINDER = "deadline_reminder"
     COMMENT_REPLY = "comment_reply"
+
 
 class InvitationStatus(str, Enum):
     PENDING = "pending"

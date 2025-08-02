@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from app.db.base import BaseDocument, PyObjectId
 from app.db.enums import ActivityType
 
+
 class Activity(BaseDocument):
     type: ActivityType
     user_id: PyObjectId
@@ -11,6 +12,7 @@ class Activity(BaseDocument):
     target_user_id: Optional[PyObjectId] = None
     metadata: Dict[str, Any] = {}
     description: str
+
 
 class ActivityCreate(BaseModel):
     type: ActivityType

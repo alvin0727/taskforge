@@ -10,6 +10,7 @@ app = FastAPI()
 add_cors_middleware(app)
 app.add_middleware(LoggingMiddleware)
 
+
 @app.on_event("startup")
 async def startup_db_check():
     try:

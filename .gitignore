@@ -35,3 +35,6 @@ coverage/
 
 # turbo
 .turbo
+
+# TaskForge specific files
+flow.md

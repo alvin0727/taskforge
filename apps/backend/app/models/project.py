@@ -4,11 +4,13 @@ from pydantic import BaseModel, Field
 from app.db.base import BaseDocument, PyObjectId
 from app.db.enums import ProjectStatus
 
+
 class ProjectSettings(BaseModel):
     public: bool = False
     allow_comments: bool = True
     auto_assign: bool = False
     default_assignee: Optional[PyObjectId] = None
+
 
 class Project(BaseDocument):
     name: str = Field(..., min_length=1, max_length=100)
@@ -25,6 +27,7 @@ class Project(BaseDocument):
     tags: List[str] = []
     archived: bool = False
 
+
 class ProjectCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     slug: str
@@ -32,6 +35,7 @@ class ProjectCreate(BaseModel):
     color: str = "#3B82F6"
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None

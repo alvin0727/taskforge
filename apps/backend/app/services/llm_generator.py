@@ -1,5 +1,6 @@
-from app.models.task import Task 
+from app.models.task import Task
 from typing import List
+
 
 def generate_tasks_from_prompt(prompt: str, workflow_id: str) -> List[dict]:
     root1 = Task(
@@ -44,6 +45,7 @@ def generate_tasks_from_prompt(prompt: str, workflow_id: str) -> List[dict]:
     )
     return [t.model_dump(by_alias=True) for t in [root1, sub1, sub2, root2]]
 
+
 def generate_dummy_tasks(workflow_id: str, num_root: int = 10, num_sub: int = 2) -> List[dict]:
     tasks = []
     for i in range(num_root):
@@ -67,7 +69,7 @@ def generate_dummy_tasks(workflow_id: str, num_root: int = 10, num_sub: int = 2)
                 is_completed=False,
                 dependencies=[],
                 order=j,
-                parent_id=str(root.id) 
+                parent_id=str(root.id)
             )
             tasks.append(sub)
     return [t.model_dump(by_alias=True) for t in tasks]

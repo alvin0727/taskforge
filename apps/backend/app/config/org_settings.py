@@ -16,6 +16,7 @@ DEFAULT_ORG_SETTINGS = {
     }
 }
 
+
 def get_org_settings(org_type: str = "personal") -> dict:
     settings = deepcopy(DEFAULT_ORG_SETTINGS)
     settings["type"] = org_type

@@ -5,9 +5,11 @@ from pydantic import BaseModel, Field
 from app.db.base import BaseDocument, PyObjectId
 from app.db.enums import TaskStatus, TaskPriority
 
+
 class TaskLabel(BaseModel):
     name: str
     color: str
+
 
 class TaskAttachment(BaseModel):
     filename: str
@@ -17,6 +19,7 @@ class TaskAttachment(BaseModel):
     uploaded_by: PyObjectId
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class TaskComment(BaseModel):
     id: str = Field(default_factory=lambda: str(ObjectId()))
     content: str
@@ -25,12 +28,14 @@ class TaskComment(BaseModel):
     updated_at: Optional[datetime] = None
     mentions: List[PyObjectId] = []
 
+
 class TaskTimeLog(BaseModel):
     user_id: PyObjectId
     start_time: datetime
     end_time: Optional[datetime] = None
     duration_minutes: Optional[int] = None
     description: Optional[str] = None
+
 
 class Task(BaseDocument):
     title: str = Field(..., min_length=1, max_length=200)
@@ -58,6 +63,7 @@ class Task(BaseDocument):
     position: float = 0.0
     archived: bool = False
 
+
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
@@ -69,6 +75,7 @@ class TaskCreate(BaseModel):
     due_date: Optional[datetime] = None
     estimated_hours: Optional[float] = None
     labels: List[TaskLabel] = []
+
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None

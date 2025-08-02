@@ -3,6 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from app.db.base import BaseDocument, PyObjectId
 
+
 class CalendarEvent(BaseDocument):
     title: str
     description: Optional[str] = None
@@ -17,6 +18,7 @@ class CalendarEvent(BaseDocument):
     meeting_url: Optional[str] = None
     creator_id: PyObjectId
 
+
 class CalendarEventCreate(BaseModel):
     title: str
     description: Optional[str] = None
@@ -29,6 +31,7 @@ class CalendarEventCreate(BaseModel):
     attendees: List[str] = []
     location: Optional[str] = None
     meeting_url: Optional[str] = None
+
 
 class CalendarEventUpdate(BaseModel):
     title: Optional[str] = None
