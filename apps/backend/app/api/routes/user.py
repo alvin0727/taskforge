@@ -21,14 +21,7 @@ async def register_personal(request: user_request.PersonalSignupRequest):
     )
     
     return {
-        "message": "Personal workspace created successfully",
-        "user_id": result["user_id"],
-        "workspace": result["organization"],
-        "next_steps": [
-            "Verify your email",
-            "Create your first project",
-            "Explore TaskForge features"
-        ]
+        "message": "Personal workspace created successfully"
     }
 
 @router.post("/register/team")
@@ -46,14 +39,7 @@ async def register_team(request: user_request.TeamSignupRequest):
     )
     
     return {
-        "message": "Team organization created successfully",
-        "user_id": result["user_id"],
-        "organization": result["organization"],
-        "next_steps": [
-            "Verify your email",
-            "Invite team members",
-            "Create your first project"
-        ]
+        "message": "Team organization created successfully"
     }
 
 @router.post("/register/join")
@@ -68,14 +54,7 @@ async def register_with_invitation(request: user_request.InvitationSignupRequest
     )
     
     return {
-        "message": f"Successfully joined {result['organization']['organization_name']}",
-        "user_id": result["user_id"],
-        "organization": result["organization"],
-        "next_steps": [
-            "Verify your email",
-            "Explore your team's projects",
-            "Update your profile"
-        ]
+        "message": f"Successfully joined organization {result['organization']['name']}"
     }
     
 @router.get("/verify-email")

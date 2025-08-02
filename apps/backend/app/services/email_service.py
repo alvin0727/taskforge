@@ -123,14 +123,14 @@ async def send_invitation_email(
     
     if existing_user:
         # Existing user - direct accept invitation
-        invitation_link = f"{FRONTEND_URL}/login?token={token}"
+        invitation_link = f"{FRONTEND_URL}/user/login?token={token}"
         action_text = "Accept Invitation"
         instruction = "Click the button below to join the organization:"
         header_title = f"Join {organization_name}"
         header_subtitle = "You've been invited to collaborate"
     else:
         # New user - signup with invitation
-        invitation_link = f"{FRONTEND_URL}/signup?token={token}"
+        invitation_link = f"{FRONTEND_URL}/user/signup?token={token}"
         action_text = "Join & Create Account"
         instruction = "Click the button below to create your account and join the organization:"
         header_title = f"Welcome to {organization_name}"

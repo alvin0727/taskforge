@@ -12,7 +12,6 @@ from app.services.email_service import send_invitation_email
 from app.config.org_settings import get_org_settings
 from app.utils.token_manager import create_invitation_token
 
-
 db = get_db()
 
 class OrganizationService:
@@ -134,6 +133,7 @@ class OrganizationService:
     async def invite_user_to_organization(
         organization_id: ObjectId,
         email: str,
+        inviter_name: str,
         role: UserRole,
         invited_by: ObjectId,
         message: Optional[str] = None
@@ -153,34 +153,36 @@ class OrganizationService:
                         raise HTTPException(status_code=400, detail={"message": "User already a member of this organization"})
 
             # Generate unique invitation token
-            token = create_invitation_token(email, organization_id, role)
+            token = create_invitation_token(email, str(organization_id), role)
             expires_at = datetime.utcnow() + timedelta(days=7)
             
             # Create invitation document
             invitation = OrganizationInvitation(
-                organization_id=organization_id,
+                organization_id=str(organization_id),
                 email=email,
                 role=role,
-                invited_by=invited_by,
+                invited_by=str(invited_by),
                 token=token,
                 expires_at=expires_at,
                 status=InvitationStatus.PENDING,
                 message=message,
                 created_at=datetime.utcnow()
             )
-            
             await db["organization_invitations"].insert_one(invitation.model_dump(by_alias=True))
             
             # Send invitation email
             await send_invitation_email(
                 email=email,
                 organization_name=org["name"],
+                inviter_name=inviter_name,
                 role=role,
                 token=token,
                 message=message
             )
             
             return token
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to invite user: {str(e)}")
     
@@ -215,7 +217,14 @@ class OrganizationService:
                 organization_id=ObjectId(organization_id),
                 role=role,
                 invited_by=invitation["invited_by"]
-            )      
+            )
+            
+            # Add user to organization's members list if not already present
+            await db["organizations"].update_one(
+                {"_id": ObjectId(organization_id)},
+                {"$addToSet": {"members": user_id}}
+            )
+            
             
             # Mark invitation as accepted
             await db["organization_invitations"].update_one(

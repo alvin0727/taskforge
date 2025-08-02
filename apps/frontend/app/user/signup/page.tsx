@@ -145,7 +145,17 @@ export default function SignupPage() {
             }
             
             // Redirect to verification pending page or login
-            router.push("/user/login?message=Please check your email for verification");
+            let message = "Please check your email for verification";
+            if (signupType === "personal") {
+                message = "Personal workspace created! Please check your email for verification.";
+            } else if (signupType === "team") {
+                message = `Team organization \"${form.organizationName}\" created! Please check your email for verification.`;
+            } else if (signupType === "invitation") {
+                message = invitationInfo?.organization_name
+                    ? `Successfully joined organization \"${invitationInfo.organization_name}\"! Please check your email for verification.`
+                    : "Successfully joined organization! Please check your email for verification.";
+            }
+            router.push(`/user/login?message=${encodeURIComponent(message)}`);
             
         } catch (err) {
             const errorMsg = getAxiosErrorMessage(err);

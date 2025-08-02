@@ -124,7 +124,7 @@ class UserService:
 
                 return {
                     "user_id": str(user_id),
-                    "organization": organization_info,
+                    **organization_info,
                     "signup_type": signup_type,
                     "verification_required": True
                 }

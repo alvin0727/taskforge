@@ -7,6 +7,7 @@ from app.db.enums import UserRole
 from app.db.enums import InvitationStatus
 import app.lib.request.organization_request as org_req
 from app.db.database import get_db
+from app.utils.logger import logger
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 db = get_db()
@@ -133,10 +134,12 @@ async def invite_member(
     )
     
     if user_role not in [UserRole.ADMIN, UserRole.MANAGER]:
+        logger.warning(f"User {user_id} attempted to invite member to organization {organization_id} without permission")
         raise HTTPException(status_code=403, detail={"message": "Insufficient permissions to invite members"})
     
     invitation_token = await OrganizationService.invite_user_to_organization(
         organization_id=organization_id,
+        inviter_name=user["name"],
         email=request.email,
         role=request.role,
         invited_by=user_id,
@@ -157,9 +160,14 @@ async def get_invitation_details(token: str):
     })
     if not invitation:
         raise HTTPException(status_code=404, detail={"message": "Invalid or expired invitation token"})
+    
+    # Get organization name from database
+    org = await db["organizations"].find_one({"_id": ObjectId(invitation["organization_id"])})
+    organization_name = org["name"] if org else ""
+    
     return {
         "email": invitation["email"],
-        "organization_name": ...,
+        "organization_name": organization_name,
         "role": invitation["role"],
         "message": invitation.get("message", "")
     }

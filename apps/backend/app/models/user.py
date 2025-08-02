@@ -11,7 +11,6 @@ class UserOrganization(BaseModel):
     status: str = "active"  # active, invited, suspended
     joined_at: datetime = Field(default_factory=datetime.utcnow)
     invited_by: Optional[PyObjectId] = None
-    invitation_token: Optional[str] = None
 
 class UserProfile(BaseModel):
     avatar_url: Optional[str] = None
