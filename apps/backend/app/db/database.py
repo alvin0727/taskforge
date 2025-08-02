@@ -65,6 +65,11 @@ async def ensure_indexes():
     
     # Favorites indexes
     await db["user_favorites"].create_index([("user_id", 1), ("item_type", 1), ("item_id", 1)], unique=True)
+    
+    # Organization Invitation indexes
+    await db["organization_invitations"].create_index([("token", 1)], unique=True)
+    await db["organization_invitations"].create_index([("email", 1)])
+    await db["organization_invitations"].create_index([("organization_id", 1)])
 
 def get_db():
     return db

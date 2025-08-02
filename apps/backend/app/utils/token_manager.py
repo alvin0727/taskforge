@@ -25,3 +25,13 @@ def verify_refresh_token(token: str):
         return payload
     except JWTError:
         return None
+
+def create_invitation_token(email: str, organization_id: str, role: str, expires_days: int = 7):
+    expire = datetime.utcnow() + timedelta(days=expires_days)
+    to_encode = {
+        "email": email,
+        "organization_id": organization_id,
+        "role": role,
+        "exp": expire
+    }
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

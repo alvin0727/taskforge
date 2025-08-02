@@ -3,7 +3,7 @@ import { Mail, Github, Linkedin } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-neutral-900 border-t border-neutral-800 py-6 h-18">
+    <footer className="w-full bg-neutral-900 border-t border-neutral-800 py-6 h-16">
       <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="text-sm text-center md:text-left text-neutral-400">
           &copy; {new Date().getFullYear()} <span className="text-white font-bold">TaskForge</span>. Built with 💙 by{" "}

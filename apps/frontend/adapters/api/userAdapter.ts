@@ -1,5 +1,5 @@
 import api from "@/lib/axios";
-import { User } from "@/lib/types/user";
+import { User, RequestSignupPersonal, RequestSignupTeam, RequestSignupWithInvitation } from "@/lib/types/user";
 
 export async function login(email: string, password: string): Promise<any> {
   const res = await api.post(`/users/login`, { email, password });
@@ -15,14 +15,31 @@ export async function getProfile(): Promise<User> {
   return res.data;
 }
 
-export async function signup(email: string, name: string, password: string): Promise<any> {
-  const res = await api.post(`/users/signup`, { email, name, password });
+export async function signupPersonal(data: RequestSignupPersonal): Promise<any> {
+  const res = await api.post(`/users/register/personal`, data);
   return res.data;
+}
+
+export async function signupTeam(data: RequestSignupTeam): Promise<any> {
+  const res = await api.post(`/users/register/team`, data);
+  return res.data;
+}
+
+export async function signupWithInvitation(data: RequestSignupWithInvitation): Promise<any> {
+  const res = await api.post(`/users/register/join`, data);
+  return res.data;
+}
+
+export async function verifyEmail(token: string) {
+  return api.get(`/users/verify-email?token=${token}`);
 }
 
 export default {
   login,
   verifyOTP,
   getProfile,
-  signup,
+  verifyEmail,
+  signupPersonal,
+  signupTeam,
+  signupWithInvitation
 };

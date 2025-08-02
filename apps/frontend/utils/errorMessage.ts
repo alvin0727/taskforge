@@ -3,14 +3,22 @@ export function getAxiosErrorMessage(err: unknown): string {
         err &&
         typeof err === "object" &&
         "response" in err &&
-        (err as any).response?.data?.detail?.message
+        (err as any).response?.data?.detail
     ) {
-        const detail = (err as any).response.data.detail;
-        let message = detail.message;
-        if (detail.remaining_attempts !== undefined) {
-            message += ` (${detail.remaining_attempts} attempts left)`;
+        const res = (err as any).response;
+        const detail = res.data.detail;
+        // If error 500, return detail as string if possible
+        if (res.status === 500) {
+            return "Internal server error. Please try again later.";
         }
-        return message;
+        // For other errors, use message field if available
+        if (detail?.message) {
+            let message = detail.message;
+            if (detail.remaining_attempts !== undefined) {
+                message += ` (${detail.remaining_attempts} attempts left)`;
+            }
+            return message;
+        }
     }
-    return "Something went wrong";
+    return "Something went wrong. Please try again later.";
 }

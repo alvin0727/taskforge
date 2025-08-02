@@ -16,6 +16,7 @@ import {
   Zap,
   Filter
 } from "lucide-react";
+import { useUserStore } from "@/stores/userStore";
 
 const mockUser = {
   name: "Sarah Chen",
@@ -62,12 +63,7 @@ const mockActivity = [
 
 export default function Dashboard() {
   const router = useRouter();
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const user = useUserStore((state) => state.user);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

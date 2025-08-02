@@ -47,3 +47,9 @@ class NotificationType(str, Enum):
     PROJECT_UPDATE = "project_update"
     DEADLINE_REMINDER = "deadline_reminder"
     COMMENT_REPLY = "comment_reply"
+
+class InvitationStatus(str, Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    EXPIRED = "expired"
+    REVOKED = "revoked"

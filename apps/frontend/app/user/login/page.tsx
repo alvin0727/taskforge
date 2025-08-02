@@ -10,10 +10,12 @@ import LoadingButton from "@/components/ui/loading/LoadingButton";
 import { useUserStore } from "@/stores/userStore";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
 import userService from "@/services/users/userService";
-
+import { useSearchParams } from "next/navigation";
 
 export default function Login() {
     const router = useRouter();
+
+    const searchParams = useSearchParams();
     const [step, setStep] = useState<"login" | "otp">("login");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -41,6 +43,13 @@ export default function Login() {
         checkAuthenticated();
         return () => { isMounted = false; };
     }, [router]);
+
+    useEffect(() => {
+        const message = searchParams.get("message");
+        if (message) {
+            toast.success(message);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         const msg = sessionStorage.getItem("authError");

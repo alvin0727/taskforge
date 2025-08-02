@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { useUserStore } from "@/stores/userStore";
 import userService from "@/services/users/userService";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();

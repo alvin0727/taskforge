@@ -3,18 +3,18 @@ from app.utils.token_manager import verify_token
 
 async def get_current_user(auth_token: str = Cookie(None)):
     if not auth_token:
-        raise HTTPException(status_code=401, detail="Missing auth token")
+        raise HTTPException(status_code=401, detail={"message": "Missing auth token"})
     payload = verify_token(auth_token)
     if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail={"message": "Invalid or expired token"})
     return payload
 
 async def get_current_user_from_refresh_token(refresh_token: str = Cookie(None)):
     if not refresh_token:
-        raise HTTPException(status_code=401, detail="Missing refresh token")
+        raise HTTPException(status_code=401, detail={"message": "Missing refresh token"})
     payload = verify_token(refresh_token)
     if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+        raise HTTPException(status_code=401, detail={"message": "Invalid or expired refresh token"})
     return payload
 
 async def clear_auth_cookie(response: Response):
