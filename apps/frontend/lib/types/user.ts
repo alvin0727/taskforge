@@ -38,3 +38,12 @@ export interface RequestSignupWithInvitation {
   password: string;
   invitation_token: string;
 }
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+export interface VerifyOTPRequest {
+  email: string;
+  otp: string;
+}

@@ -24,6 +24,7 @@ export default function Login() {
     const [timer, setTimer] = useState(60);
     const [resending, setResending] = useState(false);
     const [loading, setLoading] = useState(false);
+    const invitationToken = searchParams.get("token");
 
     const otpRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
 
@@ -32,8 +33,13 @@ export default function Login() {
         async function checkAuthenticated() {
             try {
                 const profile = await userService.getProfile();
+
                 if (profile && isMounted) {
-                    router.replace("/");
+                    if (invitationToken) {
+                        router.push(`/?invitationToken=${invitationToken}`);
+                    } else {
+                        router.push("/");
+                    }
                 }
             } catch (error) {
                 // Optional: log error for debugging, but don't show to user
@@ -72,7 +78,7 @@ export default function Login() {
         setError("");
         setLoading(true);
         try {
-            await UserService.login(email, password);
+            await UserService.login({ email, password });
             toast.success("Login successful");
             setStep("otp");
             setTimer(60);
@@ -113,11 +119,15 @@ export default function Login() {
         }
         setError("");
         try {
-            const response = await UserService.verifyOTP(email, code);
+            const response = await UserService.verifyOTP({ email, otp: code });
             if (response && response.user) {
                 useUserStore.setState({ user: response.user });
             }
-            router.push("/");
+            if (invitationToken) {
+                router.push(`/?invitationToken=${invitationToken}`);
+            } else {
+                router.push("/");
+            }
         } catch (err) {
             const message = getAxiosErrorMessage(err);
             setError(message);

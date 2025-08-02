@@ -8,6 +8,7 @@ from app.models.user import User, UserOrganization
 from app.models.organization import Organization
 from app.models.organization_invitation import OrganizationInvitation
 from app.db.enums import InvitationStatus, UserRole
+from app.utils.logger import logger
 from app.services.email_service import send_invitation_email
 from app.config.org_settings import get_org_settings
 from app.utils.token_manager import create_invitation_token
@@ -157,8 +158,8 @@ class OrganizationService:
             # Check if user already exists and is a member
             existing_user = await db["users"].find_one({"email": email})
             if existing_user:
-                for org in existing_user.get("organizations", []):
-                    if org["organization_id"] == organization_id:
+                for user_org in existing_user.get("organizations", []):
+                    if user_org["organization_id"] == organization_id:
                         raise HTTPException(status_code=400, detail={
                                             "message": "User already a member of this organization"})
 
@@ -183,7 +184,7 @@ class OrganizationService:
             # Send invitation email
             await send_invitation_email(
                 email=email,
-                organization_name=org["name"],
+                organization_name=org.get("name", "Organization"),
                 inviter_name=inviter_name,
                 role=role,
                 token=token,

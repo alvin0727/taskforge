@@ -6,6 +6,8 @@ from app.api.dependencies import get_current_user
 from app.db.enums import UserRole
 from app.db.enums import InvitationStatus
 import app.lib.request.organization_request as org_req
+from app.utils.permissions import get_allowed_roles_for_action, check_org_permission
+
 from app.db.database import get_db
 from app.utils.logger import logger
 
@@ -132,21 +134,12 @@ async def invite_member(
     user_id = ObjectId(current_user["id"])
     organization_id = ObjectId(org_id)
 
-    # Verify user can invite (admin/manager role)
+    # Verify user can invite (dynamic by org settings)
     user = await db["users"].find_one({"_id": user_id})
-    user_orgs = user.get("organizations", [])
-
-    user_role = next(
-        (uo["role"]
-         for uo in user_orgs if uo["organization_id"] == organization_id),
-        None
-    )
-
-    if user_role not in [UserRole.ADMIN, UserRole.MANAGER]:
-        logger.warning(
-            f"User {user_id} attempted to invite member to organization {organization_id} without permission")
-        raise HTTPException(status_code=403, detail={
-                            "message": "Insufficient permissions to invite members"})
+    org = await db["organizations"].find_one({"_id": organization_id})
+    org_settings = org.get("settings", {})
+    allowed_roles = get_allowed_roles_for_action(org_settings, "who_can_invite_members")
+    await check_org_permission(user, organization_id, allowed_roles)
 
     invitation_token = await OrganizationService.invite_user_to_organization(
         organization_id=organization_id,
@@ -197,10 +190,5 @@ async def accept_invitation(
     result = await OrganizationService.accept_invitation(token, user_id)
 
     return {
-        "message": result["message"],
-        "organization": {
-            "id": result["organization_id"],
-            "name": result["organization_name"],
-            "role": result["role"]
-        }
+        "message": result["message"]
     }

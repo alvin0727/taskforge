@@ -1,13 +1,13 @@
 import api from "@/lib/axios";
-import { User, RequestSignupPersonal, RequestSignupTeam, RequestSignupWithInvitation } from "@/lib/types/user";
+import { User, RequestSignupPersonal, RequestSignupTeam, RequestSignupWithInvitation, LoginRequest, VerifyOTPRequest } from "@/lib/types/user";
 
-export async function login(email: string, password: string): Promise<any> {
-  const res = await api.post(`/users/login`, { email, password });
+export async function login(data: LoginRequest): Promise<any> {
+  const res = await api.post(`/users/login`, data);
   return res.data;
 }
 
-export async function verifyOTP(email: string, otp: string): Promise<{ message: string; user: User }> {
-  const res = await api.post(`/users/verify-otp`, { email, otp });
+export async function verifyOTP(data: VerifyOTPRequest): Promise<{ message: string; user: User }> {
+  const res = await api.post(`/users/verify-otp`, data);
   return res.data;
 }
 export async function getProfile(): Promise<User> {

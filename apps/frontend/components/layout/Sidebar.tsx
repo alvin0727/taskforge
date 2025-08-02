@@ -23,7 +23,14 @@ import {
   Target
 } from "lucide-react";
 
+
 import { useUserStore } from "@/stores/userStore";
+
+// Mock organizations
+const mockOrganizations = [
+  { id: 'org1', name: 'Acme Corp', logo: 'AC' },
+  { id: 'org2', name: 'Beta Studio', logo: 'BS' },
+];
 
 const navLinks = [
   { name: "Dashboard", href: "/protected/dashboard", icon: Home, iconColor: "text-blue-400" },
@@ -57,9 +64,17 @@ export default function Sidebar() {
   const [avatarMenu, setAvatarMenu] = useState(false);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [favoritesExpanded, setFavoritesExpanded] = useState(true);
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [activeOrg, setActiveOrg] = useState(mockOrganizations[0]);
   const avatarRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const user = useUserStore((state) => state.user);
+
+  const handleOrgSelect = (org: typeof mockOrganizations[0]) => {
+    setActiveOrg(org);
+    setOrgDropdownOpen(false);
+    // TODO: fetch organization-specific data here
+  };
 
   // Improved initial generation with fallback
   const initial = React.useMemo(() => {
@@ -215,6 +230,41 @@ export default function Sidebar() {
               placeholder="Search tasks, projects..."
               className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-10 pr-4 py-2 text-sm text-neutral-300 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
             />
+          </div>
+        </div>
+
+        {/* Organization Dropdown */}
+        <div className="p-4 border-b border-neutral-800">
+          <div className="relative">
+            <button
+              className="flex items-center gap-3 w-full px-3 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-neutral-300 font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
+              onClick={() => setOrgDropdownOpen((prev) => !prev)}
+              aria-haspopup="listbox"
+              aria-expanded={orgDropdownOpen}
+            >
+              <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                {activeOrg.logo}
+              </div>
+              <span className="flex-1 text-left">{activeOrg.name}</span>
+              <ChevronDown size={16} className="text-neutral-400" />
+            </button>
+            {orgDropdownOpen && (
+              <div className="absolute left-0 right-0 mt-2 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg z-10">
+                {mockOrganizations.map((org) => (
+                  <button
+                    key={org.id}
+                    className={`flex items-center gap-3 w-full px-3 py-2 text-neutral-300 hover:bg-neutral-800 hover:text-blue-400 rounded-lg transition-colors ${org.id === activeOrg.id ? 'bg-neutral-800' : ''}`}
+                    onClick={() => handleOrgSelect(org)}
+                  >
+                    <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                      {org.logo}
+                    </div>
+                    <span className="flex-1 text-left">{org.name}</span>
+                    {org.id === activeOrg.id && <CheckSquare size={16} className="text-green-400" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

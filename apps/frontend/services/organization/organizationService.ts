@@ -1,10 +1,16 @@
-import organization_adapter from "@/adapters/api/organization_adapter";
+import organization_adapter from "@/adapters/api/organizationAdapter";
 
-async function getInvitationDetails(token: string): Promise<any> {
+export async function getInvitationDetails(token: string): Promise<any> {
     const res = await organization_adapter.getInvitationDetails(token);
     return res;
 }
 
+export async function acceptInvitation(token: string): Promise<any> {
+    const res = await organization_adapter.acceptInvitation(token);
+    return res;
+}
+
 export default {
-    getInvitationDetails
+    getInvitationDetails,
+    acceptInvitation
 };

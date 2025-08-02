@@ -1,13 +1,13 @@
 import UserAdapter from "@/adapters/api/userAdapter";
-import { User, RequestSignupPersonal, RequestSignupTeam, RequestSignupWithInvitation } from "@/lib/types/user";
+import { User, RequestSignupPersonal, RequestSignupTeam, RequestSignupWithInvitation, LoginRequest, VerifyOTPRequest } from "@/lib/types/user";
 
-async function login(email: string, password: string): Promise<any> {
-  const res = await UserAdapter.login(email, password);
+async function login(data: LoginRequest): Promise<any> {
+  const res = await UserAdapter.login(data);
   return res;
 }
 
-async function verifyOTP(email: string, otp: string): Promise<{ message: string; user: User }> {
-  const res = await UserAdapter.verifyOTP(email, otp);
+async function verifyOTP(data: VerifyOTPRequest): Promise<{ message: string; user: User }> {
+  const res = await UserAdapter.verifyOTP(data);
   return res;
 }
 
