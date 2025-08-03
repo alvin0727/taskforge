@@ -1,12 +1,21 @@
-# from fastapi import APIRouter, HTTPException
-# from app.utils.logger import logger
-# import app.services.task_service as task_service
+from fastapi import APIRouter, HTTPException
+from app.utils.logger import logger
+from app.services.task_service import TaskService
 # import app.utils.validators.task_validators as validators
 
 
-# router = APIRouter()
+router = APIRouter()
+router = APIRouter(prefix="/tasks", tags=["tasks"])
+task_service = TaskService()
 
-# router = APIRouter(prefix="/tasks", tags=["tasks"])
+@router.post("/generate-dummy-tasks")
+async def generate_dummy_tasks(project_id: str, board_id: str, num_tasks: int = 10, creator_id: str = None):
+    try:
+        result = await task_service.generate_tasks_for_board(project_id, board_id, num_tasks, creator_id)
+        return {"message": "Dummy tasks generated successfully", "task_ids": result}
+    except Exception as e:
+        logger.error(f"Error generating dummy tasks: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 # @router.patch("/{workflow_id}/parent/{task_id}/status")

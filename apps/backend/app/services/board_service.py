@@ -6,41 +6,14 @@ from app.db.database import get_db
 from app.models.board import Board, BoardCreate, BoardUpdate, BoardColumn
 from app.db.enums import ActivityType, UserRole, TaskStatus
 from app.utils.logger import logger
+from app.utils.permissions import verify_user_access_to_project
 
 db = get_db()
 
 class BoardService:
     
-    @staticmethod
-    async def verify_project_access(user_id: ObjectId, project_id: ObjectId) -> Dict[str, Any]:
-        """Verify user has access to project"""
-        project = await db["projects"].find_one({"_id": project_id})
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
 
-        # Check if user is project member
-        if user_id not in project.get("members", []):
-            raise HTTPException(
-                status_code=403,
-                detail="Access denied: Not a project member"
-            )
-
-        # Get user's organization role
-        user = await db["users"].find_one({"_id": user_id})
-        user_orgs = user.get("organizations", [])
-        org_role = None
-        
-        for org in user_orgs:
-            if org["organization_id"] == project["organization_id"]:
-                org_role = org["role"]
-                break
-
-        return {
-            "project": project,
-            "is_owner": project["owner_id"] == user_id,
-            "org_role": org_role,
-            "can_manage": project["owner_id"] == user_id or org_role in [UserRole.ADMIN, UserRole.MANAGER]
-        }
+    # ...existing code...
 
     @staticmethod
     def _get_default_columns() -> List[Dict[str, Any]]:
@@ -90,96 +63,24 @@ class BoardService:
             }
         ]
 
-    @staticmethod
-    async def create_board(
-        user_id: ObjectId,
-        board_data: BoardCreate
-    ) -> Dict[str, Any]:
-        """Create new board for project"""
-        try:
-            project_id = ObjectId(board_data.project_id)
-            
-            # Verify project access
-            access = await BoardService.verify_project_access(user_id, project_id)
-            if not access["can_manage"]:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Insufficient permissions to create board"
-                )
-
-            # Prepare columns
-            columns = []
-            if board_data.columns:
-                for col in board_data.columns:
-                    columns.append({
-                        "id": col.id,
-                        "name": col.name,
-                        "position": col.position,
-                        "color": col.color,
-                        "task_limit": col.task_limit
-                    })
-            else:
-                columns = BoardService._get_default_columns()
-
-            # Create board document
-            board_doc = {
-                "name": board_data.name,
-                "project_id": project_id,
-                "columns": columns,
-                "is_default": False,  # Only auto-created boards are default
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
-            }
-
-            result = await db["boards"].insert_one(board_doc)
-            board_id = result.inserted_id
-
-            # Log activity
-            await BoardService._log_activity(
-                user_id=user_id,
-                project_id=project_id,
-                activity_type=ActivityType.BOARD_UPDATED,
-                description=f"Created new board '{board_data.name}'"
-            )
-
-            # Return created board
-            created_board = await db["boards"].find_one({"_id": board_id})
-            return {
-                "id": str(board_id),
-                "name": created_board["name"],
-                "project_id": str(created_board["project_id"]),
-                "columns": created_board["columns"],
-                "is_default": created_board["is_default"],
-                "created_at": created_board["created_at"],
-                "message": "Board created successfully"
-            }
-
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to create board: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to create board: {str(e)}"
-            )
 
     @staticmethod
     async def get_board(
         user_id: ObjectId,
-        board_id: ObjectId
+        project_id: ObjectId
     ) -> Dict[str, Any]:
         """Get board by ID"""
         try:
-            # Find board
-            board = await db["boards"].find_one({"_id": board_id})
+            # Find default board for project
+            board = await db["boards"].find_one({"project_id": project_id, "is_default": True})
             if not board:
                 raise HTTPException(status_code=404, detail="Board not found")
 
             # Verify project access
-            await BoardService.verify_project_access(user_id, board["project_id"])
+            await verify_user_access_to_project(user_id, board["project_id"])
 
             # Get tasks grouped by column
-            tasks_by_column = await BoardService._get_board_tasks(board_id)
+            tasks_by_column = await BoardService._get_board_tasks(board["_id"])
 
             return {
                 "id": str(board["_id"]),
@@ -215,7 +116,7 @@ class BoardService:
                 raise HTTPException(status_code=404, detail="Board not found")
 
             # Verify project access
-            access = await BoardService.verify_project_access(user_id, board["project_id"])
+            access = await verify_user_access_to_project(user_id, board["project_id"])
             if not access["can_manage"]:
                 raise HTTPException(
                     status_code=403,
@@ -281,7 +182,7 @@ class BoardService:
         """List all boards for a project"""
         try:
             # Verify project access
-            await BoardService.verify_project_access(user_id, project_id)
+            await verify_user_access_to_project(user_id, project_id)
 
             # Get boards
             boards = await db["boards"].find({
@@ -332,7 +233,7 @@ class BoardService:
                 raise HTTPException(status_code=404, detail="Board not found")
 
             # Verify project access
-            access = await BoardService.verify_project_access(user_id, board["project_id"])
+            access = await verify_user_access_to_project(user_id, board["project_id"])
             if not access["can_manage"]:
                 raise HTTPException(
                     status_code=403,
@@ -398,7 +299,7 @@ class BoardService:
                 raise HTTPException(status_code=404, detail="Board not found")
 
             # Verify project access
-            await BoardService.verify_project_access(user_id, board["project_id"])
+            await verify_user_access_to_project(user_id, board["project_id"])
 
             # Validate column exists
             column_ids = [col["id"] for col in board["columns"]]
@@ -573,7 +474,7 @@ class BoardService:
                 raise HTTPException(status_code=404, detail="Board not found")
 
             # Verify project access
-            await BoardService.verify_project_access(user_id, board["project_id"])
+            await verify_user_access_to_project(user_id, board["project_id"])
 
             # Get task counts by column
             pipeline = [
@@ -663,7 +564,7 @@ class BoardService:
                 raise HTTPException(status_code=404, detail="Board not found")
 
             # Verify project access
-            await BoardService.verify_project_access(user_id, board["project_id"])
+            await verify_user_access_to_project(user_id, board["project_id"])
 
             # Validate all columns exist
             column_ids = [col["id"] for col in board["columns"]]
@@ -748,7 +649,7 @@ class BoardService:
                 raise HTTPException(status_code=404, detail="Board not found")
 
             # Verify project access
-            access = await BoardService.verify_project_access(user_id, board["project_id"])
+            access = await verify_user_access_to_project(user_id, board["project_id"])
             if not access["can_manage"]:
                 raise HTTPException(
                     status_code=403,
@@ -838,7 +739,7 @@ class BoardService:
                 raise HTTPException(status_code=404, detail="Board not found")
 
             # Verify project access
-            access = await BoardService.verify_project_access(user_id, board["project_id"])
+            access = await verify_user_access_to_project(user_id, board["project_id"])
             if not access["can_manage"]:
                 raise HTTPException(
                     status_code=403,

@@ -57,8 +57,8 @@ class Task(BaseDocument):
     attachments: List[TaskAttachment] = []
     comments: List[TaskComment] = []
     time_logs: List[TaskTimeLog] = []
-    subtasks: List[PyObjectId] = []
-    parent_task_id: Optional[PyObjectId] = None
+    # subtasks: List[PyObjectId] = []
+    # parent_task_id: Optional[PyObjectId] = None
     dependencies: List[PyObjectId] = []
     position: float = 0.0
     archived: bool = False

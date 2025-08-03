@@ -599,6 +599,7 @@ class ProjectService:
                     "slug": p["slug"],
                     "color": p.get("color"),
                     "organization_id": str(p["organization_id"]),
+                    "c"
                     "task_count": task_count
                 })
             return sidebar_projects

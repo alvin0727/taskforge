@@ -55,5 +55,35 @@ async def verify_user_access_to_organization(
     org_settings = org.get("settings", {})
     allowed_roles = get_allowed_roles_for_action(org_settings, action)
     await check_org_permission(user, org_id, allowed_roles)
-    
+
     return user, org
+
+
+async def verify_user_access_to_project(user_id: ObjectId, project_id: ObjectId) -> dict:
+    """Verify user has access to project and return access info"""
+    project = await db["projects"].find_one({"_id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Check if user is project member
+    if user_id not in project.get("members", []):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied: Not a project member"
+        )
+
+    # Get user's organization role
+    user = await db["users"].find_one({"_id": user_id})
+    user_orgs = user.get("organizations", [])
+    org_role = None
+    for org in user_orgs:
+        if org["organization_id"] == project["organization_id"]:
+            org_role = org["role"]
+            break
+
+    return {
+        "project": project,
+        "is_owner": project["owner_id"] == user_id,
+        "org_role": org_role,
+        "can_manage": project["owner_id"] == user_id or org_role in [UserRole.ADMIN, UserRole.MANAGER]
+    }
