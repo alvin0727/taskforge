@@ -60,14 +60,14 @@ async def get_my_organizations(current_user: dict = Depends(get_current_user)):
     }
 
 
-@router.post("/switch")
+@router.post("/switch/{org_id}")
 async def switch_organization(
-    request: org_req.SwitchOrganizationRequest,
+    org_id: str,
     current_user: dict = Depends(get_current_user)
 ):
     """Switch user's active organization"""
     user_id = ObjectId(current_user["id"])
-    organization_id = ObjectId(request.organization_id)
+    organization_id = ObjectId(org_id)
 
     await OrganizationService.switch_active_organization(user_id, organization_id)
 

@@ -14,5 +14,3 @@ class InviteMemberRequest(BaseModel):
     message: Optional[str] = None
 
 
-class SwitchOrganizationRequest(BaseModel):
-    organization_id: str

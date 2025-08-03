@@ -37,6 +37,8 @@ export default function AcceptInvitationModal({
       url.searchParams.delete("invitationToken");
       window.history.replaceState({}, "", url.toString());
       onClose();
+      // Optimistic UI + Refetch Data
+      // Next step could be to refetch the organization data or redirect to the organization dashboard
     } catch (err) {
       setError(getAxiosErrorMessage(err));
     } finally {

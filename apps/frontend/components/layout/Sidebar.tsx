@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import {
   Menu,
@@ -20,11 +20,13 @@ import {
   Archive,
   Star,
   Clock,
-  Target
+  Target,
+  Building2
 } from "lucide-react";
-
-
+import { useOrganizationStore } from "@/stores/organizationStore";
+import organizationService from "@/services/organization/organizationService";
 import { useUserStore } from "@/stores/userStore";
+import { Organization } from "@/lib/types/organization";
 
 // Mock organizations
 const mockOrganizations = [
@@ -65,52 +67,88 @@ export default function Sidebar() {
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [favoritesExpanded, setFavoritesExpanded] = useState(true);
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
-  const [activeOrg, setActiveOrg] = useState(mockOrganizations[0]);
   const avatarRef = useRef<HTMLButtonElement>(null);
+  const orgDropdownRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const user = useUserStore((state) => state.user);
 
-  const handleOrgSelect = (org: typeof mockOrganizations[0]) => {
-    setActiveOrg(org);
-    setOrgDropdownOpen(false);
-    // TODO: fetch organization-specific data here
+  const user = useUserStore((state) => state.user);
+  const organizations = useOrganizationStore((state) => state.organizations);
+  const activeOrg = useOrganizationStore((state) => state.activeOrg);
+  const setActiveOrg = useOrganizationStore((state) => state.setActiveOrg);
+
+  useEffect(() => {
+    async function fetchOrganizations() {
+      try {
+        const res = await organizationService.getMyOrganizations();
+        useOrganizationStore.getState().setOrganizations(res.organizations, res.total);
+
+        const activeOrgId = user?.active_organization_id;
+        let activeOrg = null;
+        if (activeOrgId) {
+          activeOrg = res.organizations.find((org: Organization) => org.id === activeOrgId);
+        }
+        if (!activeOrg && res.organizations.length > 0) {
+          activeOrg = res.organizations[0];
+        }
+        if (activeOrg) {
+          useOrganizationStore.getState().setActiveOrg(activeOrg);
+        }
+      } catch (err) {
+        console.error("Failed to fetch organizations", err);
+      }
+    }
+    fetchOrganizations();
+  }, [user]);
+
+  const handleOrgSelect = async (org: Organization) => {
+    try {
+      await organizationService.switchOrganization(org.id);
+      setActiveOrg(org);
+      setOrgDropdownOpen(false);
+      // TODO: fetch organization-specific data here
+      // This could be a call to fetch projects, tasks, etc. for the selected organization
+    } catch (error) {
+      console.error("Failed to switch organization", error);
+    }
   };
 
   // Improved initial generation with fallback
   const initial = React.useMemo(() => {
-    if (!user?.name) return "U";
+    if (!user || !user.name) return "U";
     return user.name
       .trim()
       .split(/\s+/)
-      .slice(0, 2) // Only take first 2 words for initials
+      .slice(0, 2)
       .map((n) => n[0])
       .join("")
       .toUpperCase();
   }, [user?.name]);
 
-  // Close avatar menu function
+  // Close functions
   const closeAvatarMenu = useCallback(() => setAvatarMenu(false), []);
-
-  // Close sidebar function
   const closeSidebar = useCallback(() => setMenuOpen(false), []);
+  const closeOrgDropdown = useCallback(() => setOrgDropdownOpen(false), []);
 
-  // Close avatar menu on click outside
-  React.useEffect(() => {
+  // Close menus on click outside
+  useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
         closeAvatarMenu();
       }
+      if (orgDropdownRef.current && !orgDropdownRef.current.contains(e.target as Node)) {
+        closeOrgDropdown();
+      }
     }
 
-    if (avatarMenu) {
+    if (avatarMenu || orgDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [avatarMenu, closeAvatarMenu]);
+  }, [avatarMenu, orgDropdownOpen, closeAvatarMenu, closeOrgDropdown]);
 
   // Close sidebar on mobile when clicking outside
-  React.useEffect(() => {
+  useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
         menuOpen &&
@@ -128,11 +166,13 @@ export default function Sidebar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen, closeSidebar]);
 
-  // Close sidebar when pressing Escape key
-  React.useEffect(() => {
+  // Close menus when pressing Escape key
+  useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (avatarMenu) {
+        if (orgDropdownOpen) {
+          closeOrgDropdown();
+        } else if (avatarMenu) {
           closeAvatarMenu();
         } else if (menuOpen) {
           closeSidebar();
@@ -140,28 +180,24 @@ export default function Sidebar() {
       }
     }
 
-    if (menuOpen || avatarMenu) {
+    if (menuOpen || avatarMenu || orgDropdownOpen) {
       document.addEventListener("keydown", handleKeyDown);
     }
 
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [menuOpen, avatarMenu, closeSidebar, closeAvatarMenu]);
+  }, [menuOpen, avatarMenu, orgDropdownOpen, closeSidebar, closeAvatarMenu, closeOrgDropdown]);
 
-  // Handle avatar menu toggle
-  const toggleAvatarMenu = useCallback(() => {
-    setAvatarMenu(prev => !prev);
-  }, []);
-
-  // Handle sidebar toggle
-  const toggleSidebar = useCallback(() => {
-    setMenuOpen(prev => !prev);
-  }, []);
+  // Handle menu toggles
+  const toggleAvatarMenu = useCallback(() => setAvatarMenu(prev => !prev), []);
+  const toggleSidebar = useCallback(() => setMenuOpen(prev => !prev), []);
+  const toggleOrgDropdown = useCallback(() => setOrgDropdownOpen(prev => !prev), []);
 
   // Handle navigation link click
   const handleNavClick = useCallback(() => {
     closeSidebar();
     closeAvatarMenu();
-  }, [closeSidebar, closeAvatarMenu]);
+    closeOrgDropdown();
+  }, [closeSidebar, closeAvatarMenu, closeOrgDropdown]);
 
   return (
     <>
@@ -175,6 +211,14 @@ export default function Sidebar() {
         >
           <Menu size={20} />
         </button>
+
+        {/* Mobile org indicator */}
+        <div className="flex items-center gap-2 text-neutral-400 text-sm">
+          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">
+            {activeOrg?.name ? activeOrg.name[0] : "O"}
+          </div>
+          <span className="truncate max-w-32">{activeOrg?.name || "Organization"}</span>
+        </div>
       </div>
 
       {/* Overlay for mobile when sidebar open */}
@@ -196,7 +240,7 @@ export default function Sidebar() {
             md:relative md:translate-x-0 md:flex md:flex-col md:w-72 md:self-stretch
           `}
       >
-        {/* Header with close button and search */}
+        {/* Header with close button */}
         <div className="flex items-center justify-between p-4 border-b border-neutral-800">
           <Link
             href="/"
@@ -221,6 +265,81 @@ export default function Sidebar() {
           </button>
         </div>
 
+        {/* Organization Section - Enhanced */}
+        <div className="p-4 border-b border-neutral-800">
+          <div className="mb-3">
+            <span className="text-xs text-neutral-500 uppercase tracking-wider font-medium flex items-center gap-2">
+              <Building2 size={12} />
+              Organization
+            </span>
+          </div>
+          <div className="relative" ref={orgDropdownRef}>
+            <button
+              className="flex items-center gap-3 w-full px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-neutral-300 font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 border border-neutral-700 transition-all duration-200"
+              onClick={toggleOrgDropdown}
+              aria-haspopup="listbox"
+              aria-expanded={orgDropdownOpen}
+            >
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                {activeOrg?.name ? activeOrg.name[0] : "O"}
+              </div>
+              <div className="flex-1 text-left">
+                <div className="text-neutral-300 font-medium text-sm">
+                  {activeOrg?.name || "Select Organization"}
+                </div>
+                <div className="text-neutral-500 text-xs">
+                  {organizations.length} organization{organizations.length !== 1 ? 's' : ''} available
+                </div>
+              </div>
+              <ChevronDown
+                size={16}
+                className={`text-neutral-400 transition-transform duration-200 ${orgDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {orgDropdownOpen && (
+              <div className="absolute left-0 right-0 mt-2 bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                <div className="max-h-60 overflow-y-auto">
+                  {organizations.map((org) => (
+                    <button
+                      key={org.id}
+                      className={`flex items-center gap-3 w-full px-3 py-2.5 text-neutral-300 hover:bg-neutral-800 hover:text-blue-400 transition-colors ${org.id === activeOrg?.id ? 'bg-neutral-800 text-blue-400' : ''
+                        }`}
+                      onClick={() => handleOrgSelect(org)}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                        {org.name ? org.name[0] : "O"}
+                      </div>
+                      <span className="flex-1 text-left font-medium">{org.name}</span>
+                      {org.id === activeOrg?.id && (
+                        <CheckSquare size={16} className="text-green-400" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Organization Management */}
+                <div className="border-t border-neutral-700 bg-neutral-800/50">
+                  <button
+                    className="flex items-center gap-3 w-full px-3 py-2 text-neutral-400 hover:bg-neutral-700 hover:text-blue-400 text-sm transition-colors"
+                    onClick={handleNavClick}
+                  >
+                    <Plus size={14} />
+                    Create Organization
+                  </button>
+                  <button
+                    className="flex items-center gap-3 w-full px-3 py-2 text-neutral-400 hover:bg-neutral-700 hover:text-blue-400 text-sm transition-colors"
+                    onClick={handleNavClick}
+                  >
+                    <Settings size={14} />
+                    Manage Organizations
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Search Bar */}
         <div className="p-4 border-b border-neutral-800">
           <div className="relative">
@@ -228,43 +347,8 @@ export default function Sidebar() {
             <input
               type="text"
               placeholder="Search tasks, projects..."
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-10 pr-4 py-2 text-sm text-neutral-300 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-neutral-300 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
             />
-          </div>
-        </div>
-
-        {/* Organization Dropdown */}
-        <div className="p-4 border-b border-neutral-800">
-          <div className="relative">
-            <button
-              className="flex items-center gap-3 w-full px-3 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-neutral-300 font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
-              onClick={() => setOrgDropdownOpen((prev) => !prev)}
-              aria-haspopup="listbox"
-              aria-expanded={orgDropdownOpen}
-            >
-              <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                {activeOrg.logo}
-              </div>
-              <span className="flex-1 text-left">{activeOrg.name}</span>
-              <ChevronDown size={16} className="text-neutral-400" />
-            </button>
-            {orgDropdownOpen && (
-              <div className="absolute left-0 right-0 mt-2 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg z-10">
-                {mockOrganizations.map((org) => (
-                  <button
-                    key={org.id}
-                    className={`flex items-center gap-3 w-full px-3 py-2 text-neutral-300 hover:bg-neutral-800 hover:text-blue-400 rounded-lg transition-colors ${org.id === activeOrg.id ? 'bg-neutral-800' : ''}`}
-                    onClick={() => handleOrgSelect(org)}
-                  >
-                    <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                      {org.logo}
-                    </div>
-                    <span className="flex-1 text-left">{org.name}</span>
-                    {org.id === activeOrg.id && <CheckSquare size={16} className="text-green-400" />}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
@@ -274,7 +358,7 @@ export default function Sidebar() {
             {quickActions.map((action) => (
               <button
                 key={action.name}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 justify-center"
                 onClick={handleNavClick}
               >
                 <action.icon size={16} />

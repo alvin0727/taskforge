@@ -10,7 +10,19 @@ export async function acceptInvitation(token: string): Promise<any> {
   return res.data;
 }
 
+export async function getMyOrganizations(): Promise<any> {
+  const res = await api.get(`/organizations/my-organizations`);
+  return res.data;
+}
+
+export async function switchOrganization(orgId: string): Promise<any> {
+  const res = await api.post(`/organizations/switch/${orgId}`);
+  return res.data;
+}``
+
 export default {
   getInvitationDetails,
-  acceptInvitation
+  acceptInvitation,
+  getMyOrganizations,
+  switchOrganization
 };

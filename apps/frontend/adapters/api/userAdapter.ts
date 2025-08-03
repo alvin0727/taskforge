@@ -12,7 +12,7 @@ export async function verifyOTP(data: VerifyOTPRequest): Promise<{ message: stri
 }
 export async function getProfile(): Promise<User> {
   const res = await api.get(`/users/me`);
-  return res.data;
+  return res.data.user;
 }
 
 export async function signupPersonal(data: RequestSignupPersonal): Promise<any> {

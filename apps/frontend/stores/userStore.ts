@@ -19,6 +19,7 @@ type User = {
   created_at: string;
   last_login: string | null;
   profile: UserProfile;
+  active_organization_id: string | null;
 };
 
 type UserStore = {

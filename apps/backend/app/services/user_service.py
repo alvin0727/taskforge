@@ -535,6 +535,7 @@ class UserService:
                 is_active=user.get("is_active", True),
                 created_at=user.get("created_at"),
                 last_login=user.get("last_login"),
+                active_organization_id= str(user.get("active_organization_id")) if user.get("active_organization_id") else None
             )
             return {
                 "message": "Get user successful",
