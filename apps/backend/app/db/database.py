@@ -26,6 +26,7 @@ async def ensure_indexes():
     await db["projects"].create_index("owner_id")
     await db["projects"].create_index([("organization_id", 1), ("slug", 1)], unique=True)
     await db["projects"].create_index("status")
+    await db["projects"].create_index("updated_at")
 
     # Task indexes
     await db["tasks"].create_index("project_id")

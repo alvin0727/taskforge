@@ -25,14 +25,11 @@ import {
 } from "lucide-react";
 import { useOrganizationStore } from "@/stores/organizationStore";
 import organizationService from "@/services/organization/organizationService";
+import projectService from "@/services/projects/projectService";
 import { useUserStore } from "@/stores/userStore";
 import { Organization } from "@/lib/types/organization";
+import { SidebarProject } from "@/lib/types/project";
 
-// Mock organizations
-const mockOrganizations = [
-  { id: 'org1', name: 'Acme Corp', logo: 'AC' },
-  { id: 'org2', name: 'Beta Studio', logo: 'BS' },
-];
 
 const navLinks = [
   { name: "Dashboard", href: "/protected/dashboard", icon: Home, iconColor: "text-blue-400" },
@@ -49,12 +46,6 @@ const quickActions = [
   { name: "New Project", icon: Target, action: "create-project" },
 ];
 
-const recentProjects = [
-  { name: "Website Redesign", color: "bg-blue-500", tasks: 12 },
-  { name: "Mobile App", color: "bg-green-500", tasks: 8 },
-  { name: "Marketing Campaign", color: "bg-purple-500", tasks: 15 },
-];
-
 const favorites = [
   { name: "Sprint Planning", href: "/protected/sprint", icon: Clock, iconColor: "text-yellow-400" },
   { name: "Archived Projects", href: "/protected/archive", icon: Archive, iconColor: "text-gray-400" },
@@ -62,6 +53,16 @@ const favorites = [
 ];
 
 export default function Sidebar() {
+  const defaultProfile = {
+    avatar_url: "",
+    bio: "",
+    phone: "",
+    timezone: "",
+    location: "",
+    website: "",
+    language: "",
+    theme: ""
+  };
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarMenu, setAvatarMenu] = useState(false);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
@@ -75,13 +76,16 @@ export default function Sidebar() {
   const organizations = useOrganizationStore((state) => state.organizations);
   const activeOrg = useOrganizationStore((state) => state.activeOrg);
   const setActiveOrg = useOrganizationStore((state) => state.setActiveOrg);
+  const [recentProjects, setRecentProjects] = useState<SidebarProject[]>([])
 
   useEffect(() => {
-    async function fetchOrganizations() {
+    async function fetchData() {
       try {
+        // Fetch organizations
         const res = await organizationService.getMyOrganizations();
         useOrganizationStore.getState().setOrganizations(res.organizations, res.total);
 
+        // Check activeOrg
         const activeOrgId = user?.active_organization_id;
         let activeOrg = null;
         if (activeOrgId) {
@@ -92,21 +96,35 @@ export default function Sidebar() {
         }
         if (activeOrg) {
           useOrganizationStore.getState().setActiveOrg(activeOrg);
+
+          // Fetch recent projects after activeOrg has been set
+          const response = await projectService.getSideBarProject(activeOrg.id);
+          const mapped = (response.projects || []).map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            color: p.color,
+            stats: { todo_tasks: p.task_count ?? 0 }
+          }));
+          setRecentProjects(mapped);
+        } else {
+          setRecentProjects([]);
         }
       } catch (err) {
-        console.error("Failed to fetch organizations", err);
+        console.error("Failed to fetch organizations or recent projects", err);
       }
     }
-    fetchOrganizations();
+    fetchData();
   }, [user]);
+
 
   const handleOrgSelect = async (org: Organization) => {
     try {
       await organizationService.switchOrganization(org.id);
       setActiveOrg(org);
+      useUserStore.getState().updateUserFields({
+        active_organization_id: org.id
+      });
       setOrgDropdownOpen(false);
-      // TODO: fetch organization-specific data here
-      // This could be a call to fetch projects, tasks, etc. for the selected organization
     } catch (error) {
       console.error("Failed to switch organization", error);
     }
@@ -402,17 +420,26 @@ export default function Sidebar() {
 
             {projectsExpanded && (
               <div className="space-y-1 mt-2">
-                {recentProjects.map((project) => (
-                  <button
-                    key={project.name}
-                    className="flex items-center gap-3 w-full text-left text-neutral-300 hover:text-blue-400 hover:bg-neutral-800/50 py-2 px-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    onClick={handleNavClick}
-                  >
-                    <div className={`w-3 h-3 rounded-full ${project.color}`}></div>
-                    <span className="flex-1 text-sm">{project.name}</span>
-                    <span className="text-xs text-neutral-500">{project.tasks}</span>
-                  </button>
-                ))}
+                {recentProjects.length === 0 ? (
+                  <div className="text-xs text-neutral-500 px-3 py-2">No recent projects</div>
+                ) : (
+                  recentProjects.map((project) => (
+                    <button
+                      key={project.id || project.name}
+                      className="flex items-center gap-3 w-full text-left text-neutral-300 hover:text-blue-400 hover:bg-neutral-800/50 py-2 px-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      onClick={handleNavClick}
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: project.color || '#64748b' }}
+                      ></div>
+                      <span className="flex-1 text-sm">{project.name}</span>
+                      <span className="text-xs text-neutral-500">
+                        {project.task_count ?? 0}
+                      </span>
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>

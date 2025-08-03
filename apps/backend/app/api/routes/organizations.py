@@ -6,7 +6,7 @@ from app.api.dependencies import get_current_user
 from app.db.enums import UserRole
 from app.db.enums import InvitationStatus
 import app.lib.request.organization_request as org_req
-from app.utils.permissions import get_allowed_roles_for_action, check_org_permission
+from app.utils.permissions import verify_user_access_to_organization
 
 from app.db.database import get_db
 from app.utils.logger import logger
@@ -133,13 +133,11 @@ async def invite_member(
     # Check permissions
     user_id = ObjectId(current_user["id"])
     organization_id = ObjectId(org_id)
-
-    # Verify user can invite (dynamic by org settings)
-    user = await db["users"].find_one({"_id": user_id})
-    org = await db["organizations"].find_one({"_id": organization_id})
-    org_settings = org.get("settings", {})
-    allowed_roles = get_allowed_roles_for_action(org_settings, "who_can_invite_members")
-    await check_org_permission(user, organization_id, allowed_roles)
+    user, org = await verify_user_access_to_organization(
+        current_user=user_id,
+        org_id=organization_id,
+        action="who_can_invite_members"
+    )
 
     invitation_token = await OrganizationService.invite_user_to_organization(
         organization_id=organization_id,
