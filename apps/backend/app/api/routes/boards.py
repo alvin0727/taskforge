@@ -17,8 +17,8 @@ db = get_db()
 board_service = BoardService()
 
 
-@router.get("/my-board/{project_id}")
-async def getMyBoards(
+@router.get("/{project_id}")
+async def getBoard(
     project_id: str,
     current_user=Depends(get_current_user),
 ):
@@ -29,4 +29,18 @@ async def getMyBoards(
     boards = await board_service.get_board(user_id, project_id)
     return {
         "boards": boards
+    }
+    
+@router.get("/{board_id}/tasks")
+async def getBoardTasks(
+    board_id: str,
+    current_user=Depends(get_current_user),
+):
+    """Get all tasks for a board"""
+    user_id = ObjectId(current_user["id"])
+    board_id = ObjectId(board_id)
+
+    tasks = await board_service.get_board_tasks(user_id, board_id)
+    return {
+        "tasks": tasks
     }

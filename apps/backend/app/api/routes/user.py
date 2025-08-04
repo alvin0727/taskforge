@@ -94,7 +94,7 @@ async def verify_otp(verify_otp: user_request.VerifyOTP, response: Response):
 async def get_me(current_user=Depends(get_current_user)):
     return await user_service.get_user_by_id(current_user["id"])
 
-# @router.post("/refresh-token")
-# async def refresh_token(response: Response, current_user=Depends(get_current_user_from_refresh_token)):
-#     await user_service.refresh_user_session(current_user["id"], response)
-#     return {"message": "Session refreshed successfully"}
+@router.post("/refresh-token")
+async def refresh_token(response: Response, current_user=Depends(get_current_user_from_refresh_token)):
+    await user_service.refresh_user_session(current_user["id"], response)
+    return {"message": "Session refreshed successfully"}

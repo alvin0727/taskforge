@@ -1,6 +1,5 @@
 import AuthProvider from "./providers/AuthProvider";
 import Sidebar from "@/components/layout/Sidebar";
-import Footer from "@/components/layout/Footer";
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,7 +10,6 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
           <main className="flex-1">
             {children}
           </main>
-          <Footer />
         </div>
       </div>
     </AuthProvider>

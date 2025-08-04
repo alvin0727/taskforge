@@ -1,54 +1,90 @@
 import { create } from 'zustand';
-import { Task, Workflow } from '@/lib/types/workflow';
+import { Task } from '@/lib/types/task';
+import { BoardColumn } from '@/lib/types/board';
 
 interface TaskStore {
-  workflow: Workflow | null;
-  parentTasksByStatus: ParentTasksByStatus;
-  setParentTasksByStatus: (parentTasksByStatus: ParentTasksByStatus) => void;
-  updateParentTaskInStatus: (task: Task) => void;
-  setWorkflow: (workflow: Workflow) => void;
+  tasks: Task[];
+  tasksByColumn: Record<string, Task[]>;
+  setTasks: (tasks: Task[]) => void;
+  setTasksByColumn: (tasksByColumn: Record<string, Task[]>) => void;
+  clearTasks: () => void;
+  updateTaskStatus: (taskId: string, newStatus: string) => void;
+  reorderTasks: (columnId: string, tasks: Task[]) => void;
 }
 
-interface ParentTasksByStatus {
-  [status: string]: Task[];
-}
-
-export const useTaskStore = create<TaskStore>((set) => ({
-  workflow: null,
-  parentTasksByStatus: {},
-  setWorkflow: (workflow) => {
-    // Separate only parent tasks by status when setting workflow
-    const parentTasksByStatus: ParentTasksByStatus = {};
-    if (workflow?.tasks) {
-      workflow.tasks
-        .filter((task) => !task.parent_id) // only parent tasks
-        .forEach((task) => {
-          if (!parentTasksByStatus[task.status]) parentTasksByStatus[task.status] = [];
-          parentTasksByStatus[task.status].push(task);
-        });
-      // Sort every column by order
-      Object.keys(parentTasksByStatus).forEach(
-        (status) => parentTasksByStatus[status].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      );
-    }
-    set({ workflow, parentTasksByStatus });
-  },
-  setParentTasksByStatus: (parentTasksByStatus) => set({ parentTasksByStatus }),
-  updateParentTaskInStatus: (task) =>
-    set((state) => {
-      if (task.parent_id) return {}; // skip subtask
-      const tasks = state.parentTasksByStatus[task.status] || [];
-      const idx = tasks.findIndex((t) => t.id === task.id);
-      if (idx !== -1) {
-        tasks[idx] = task;
-      } else {
-        tasks.push(task);
+export const useTaskStore = create<TaskStore>((set, get) => ({
+  tasks: [],
+  tasksByColumn: {},
+  
+  setTasks: (tasks) => {
+    // Group tasks by status/column
+    const tasksByColumn: Record<string, Task[]> = {};
+    tasks.forEach(task => {
+      if (!tasksByColumn[task.status]) {
+        tasksByColumn[task.status] = [];
       }
-      return {
-        parentTasksByStatus: {
-          ...state.parentTasksByStatus,
-          [task.status]: [...tasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-        },
-      };
-    }),
+      tasksByColumn[task.status].push(task);
+    });
+    
+    // Sort tasks by position within each column
+    Object.keys(tasksByColumn).forEach(columnId => {
+      tasksByColumn[columnId].sort((a, b) => a.position - b.position);
+    });
+    
+    set({ tasks, tasksByColumn });
+  },
+  
+  setTasksByColumn: (tasksByColumn) => set({ tasksByColumn }),
+  
+  clearTasks: () => set({ tasks: [], tasksByColumn: {} }),
+  
+  updateTaskStatus: (taskId, newStatus) => {
+    const { tasks, tasksByColumn } = get();
+    
+    // Update the task in the tasks array
+    const updatedTasks = tasks.map(task => 
+      task.id === taskId ? { ...task, status: newStatus } : task
+    );
+    
+    // Update tasksByColumn
+    const newTasksByColumn = { ...tasksByColumn };
+    
+    // Find and remove task from old column
+    Object.keys(newTasksByColumn).forEach(columnId => {
+      newTasksByColumn[columnId] = newTasksByColumn[columnId].filter(task => task.id !== taskId);
+    });
+    
+    // Add task to new column
+    const updatedTask = updatedTasks.find(task => task.id === taskId);
+    if (updatedTask) {
+      if (!newTasksByColumn[newStatus]) {
+        newTasksByColumn[newStatus] = [];
+      }
+      newTasksByColumn[newStatus].push(updatedTask);
+      
+      // Update positions
+      newTasksByColumn[newStatus] = newTasksByColumn[newStatus].map((task, index) => ({
+        ...task,
+        position: index
+      }));
+    }
+    
+    set({ tasks: updatedTasks, tasksByColumn: newTasksByColumn });
+  },
+  
+  reorderTasks: (columnId, tasks) => {
+    const { tasksByColumn } = get();
+    const newTasksByColumn = {
+      ...tasksByColumn,
+      [columnId]: tasks.map((task, index) => ({ ...task, position: index }))
+    };
+    
+    // Update the main tasks array
+    const allTasks: Task[] = [];
+    Object.values(newTasksByColumn).forEach(columnTasks => {
+      allTasks.push(...columnTasks);
+    });
+    
+    set({ tasks: allTasks, tasksByColumn: newTasksByColumn });
+  }
 }));

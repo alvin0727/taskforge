@@ -10,8 +10,8 @@ from app.utils.permissions import verify_user_access_to_project
 
 db = get_db()
 
+
 class BoardService:
-    
 
     # ...existing code...
 
@@ -34,7 +34,7 @@ class BoardService:
                 "task_limit": None
             },
             {
-                "id": "in_progress", 
+                "id": "in_progress",
                 "name": "In Progress",
                 "position": 2,
                 "color": "#3B82F6",
@@ -42,7 +42,7 @@ class BoardService:
             },
             {
                 "id": "review",
-                "name": "Review", 
+                "name": "Review",
                 "position": 3,
                 "color": "#F59E0B",
                 "task_limit": None
@@ -63,44 +63,48 @@ class BoardService:
             }
         ]
 
-
     @staticmethod
     async def get_board(
         user_id: ObjectId,
         project_id: ObjectId
     ) -> Dict[str, Any]:
-        """Get board by ID"""
         try:
-            # Find default board for project
             board = await db["boards"].find_one({"project_id": project_id, "is_default": True})
             if not board:
                 raise HTTPException(status_code=404, detail="Board not found")
-
-            # Verify project access
             await verify_user_access_to_project(user_id, board["project_id"])
-
-            # Get tasks grouped by column
-            tasks_by_column = await BoardService._get_board_tasks(board["_id"])
-
             return {
                 "id": str(board["_id"]),
                 "name": board["name"],
                 "project_id": str(board["project_id"]),
                 "columns": board["columns"],
                 "is_default": board["is_default"],
-                "tasks_by_column": tasks_by_column,
                 "created_at": board["created_at"],
                 "updated_at": board["updated_at"]
             }
-
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Failed to get board: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get board: {str(e)}"
-            )
+                status_code=500, detail=f"Failed to get board: {str(e)}")
+            
+    @staticmethod
+    async def get_board_tasks(
+        user_id: ObjectId,
+        board_id: ObjectId
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        try:
+            board = await db["boards"].find_one({"_id": board_id})
+            if not board:
+                raise HTTPException(status_code=404, detail="Board not found")
+            await verify_user_access_to_project(user_id, board["project_id"])
+            return await BoardService._get_board_tasks(board_id)
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get board tasks: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to get board tasks: {str(e)}")
 
     @staticmethod
     async def update_board(
@@ -376,7 +380,7 @@ class BoardService:
                 column_id = task.get("column_id", "backlog")
                 if column_id not in tasks_by_column:
                     tasks_by_column[column_id] = []
-                
+
                 # Convert ObjectIds to strings and format task
                 task_data = {
                     "id": str(task["_id"]),
@@ -434,15 +438,15 @@ class BoardService:
         try:
             old_column_ids = {col["id"] for col in old_columns}
             new_column_ids = {col["id"] for col in new_columns}
-            
+
             # Find removed columns
             removed_columns = old_column_ids - new_column_ids
-            
+
             if removed_columns:
                 # Move tasks from removed columns to the first available column
                 if new_columns:
                     default_column_id = new_columns[0]["id"]
-                    
+
                     # Update tasks in removed columns
                     await db["tasks"].update_many(
                         {
@@ -487,14 +491,15 @@ class BoardService:
                     "overdue": {"$sum": {"$cond": [
                         {"$and": [
                             {"$lt": ["$due_date", datetime.utcnow()]},
-                            {"$not": {"$in": ["$status", ["done", "canceled"]]}}
+                            {"$not": {
+                                "$in": ["$status", ["done", "canceled"]]}}
                         ]}, 1, 0
                     ]}}
                 }}
             ]
-            
+
             column_stats = await db["tasks"].aggregate(pipeline).to_list(length=None)
-            
+
             # Initialize stats for all columns
             stats = {
                 "total_tasks": 0,
@@ -525,13 +530,14 @@ class BoardService:
             # Calculate completion rate
             completed_tasks = stats["columns"]["done"]["count"]
             if stats["total_tasks"] > 0:
-                stats["completion_rate"] = round((completed_tasks / stats["total_tasks"]) * 100, 1)
+                stats["completion_rate"] = round(
+                    (completed_tasks / stats["total_tasks"]) * 100, 1)
 
             # Calculate workflow efficiency (tasks moving through pipeline)
-            active_tasks = (stats["columns"]["todo"]["count"] + 
-                           stats["columns"]["in_progress"]["count"] + 
-                           stats["columns"]["review"]["count"])
-            
+            active_tasks = (stats["columns"]["todo"]["count"] +
+                            stats["columns"]["in_progress"]["count"] +
+                            stats["columns"]["review"]["count"])
+
             stats["workflow_efficiency"] = {
                 "active_tasks": active_tasks,
                 "blocked_tasks": stats["columns"]["backlog"]["count"],
@@ -568,7 +574,7 @@ class BoardService:
 
             # Validate all columns exist
             column_ids = [col["id"] for col in board["columns"]]
-            
+
             # Process each move
             bulk_operations = []
             for move in task_moves:
@@ -681,7 +687,8 @@ class BoardService:
             )
 
             # Log activity
-            column_name = next((col["name"] for col in board["columns"] if col["id"] == column_id), column_id)
+            column_name = next(
+                (col["name"] for col in board["columns"] if col["id"] == column_id), column_id)
             await BoardService._log_activity(
                 user_id=user_id,
                 project_id=board["project_id"],
@@ -700,6 +707,7 @@ class BoardService:
                 detail=f"Failed to archive column tasks: {str(e)}"
             )
     # ...existing code...
+
     @staticmethod
     async def _log_activity(
         user_id: ObjectId,

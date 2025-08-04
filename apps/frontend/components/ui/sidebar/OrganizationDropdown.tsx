@@ -53,45 +53,55 @@ export default function OrganizationDropdown({
           />
         </button>
 
-        {orgDropdownOpen && (
-          <div className="absolute left-0 right-0 mt-2 bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl z-20 overflow-hidden">
-            <div className="max-h-60 overflow-y-auto">
-              {organizations.map((org) => (
-                <button
-                  key={org.id}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 text-neutral-300 hover:bg-neutral-800 hover:text-blue-400 transition-colors ${org.id === activeOrg?.id ? 'bg-neutral-800 text-blue-400' : ''}`}
-                  onClick={() => handleOrgSelect(org)}
-                >
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                    {org.name ? org.name[0] : "O"}
-                  </div>
-                  <span className="flex-1 text-left font-medium">{org.name}</span>
-                  {org.id === activeOrg?.id && (
-                    <CheckSquare size={16} className="text-green-400" />
-                  )}
-                </button>
-              ))}
-            </div>
+        <div
+          style={{
+            maxHeight: orgDropdownOpen ? 500 : 0,
+            opacity: orgDropdownOpen ? 1 : 0,
+            overflow: "hidden",
+            transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s cubic-bezier(0.4,0,0.2,1)",
+          }}
+          className="absolute left-0 right-0 mt-2 bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl z-20"
+        >
+          {orgDropdownOpen && (
+            <>
+              <div className="max-h-60 overflow-y-auto">
+                {organizations.map((org) => (
+                  <button
+                    key={org.id}
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-neutral-300 hover:bg-neutral-800 hover:text-blue-400 transition-colors ${org.id === activeOrg?.id ? 'bg-neutral-800 text-blue-400' : ''}`}
+                    onClick={() => handleOrgSelect(org)}
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                      {org.name ? org.name[0] : "O"}
+                    </div>
+                    <span className="flex-1 text-left font-medium">{org.name}</span>
+                    {org.id === activeOrg?.id && (
+                      <CheckSquare size={16} className="text-green-400" />
+                    )}
+                  </button>
+                ))}
+              </div>
 
-            {/* Organization Management */}
-            <div className="border-t border-neutral-700 bg-neutral-800/50">
-              <button
-                className="flex items-center gap-3 w-full px-3 py-2 text-neutral-400 hover:bg-neutral-700 hover:text-blue-400 text-sm transition-colors"
-                onClick={handleNavClick}
-              >
-                <Plus size={14} />
-                Create Organization
-              </button>
-              <button
-                className="flex items-center gap-3 w-full px-3 py-2 text-neutral-400 hover:bg-neutral-700 hover:text-blue-400 text-sm transition-colors"
-                onClick={handleNavClick}
-              >
-                <Settings size={14} />
-                Manage Organizations
-              </button>
-            </div>
-          </div>
-        )}
+              {/* Organization Management */}
+              <div className="border-t border-neutral-700 bg-neutral-800/50">
+                <button
+                  className="flex items-center gap-3 w-full px-3 py-2 text-neutral-400 hover:bg-neutral-700 hover:text-blue-400 text-sm transition-colors"
+                  onClick={handleNavClick}
+                >
+                  <Plus size={14} />
+                  Create Organization
+                </button>
+                <button
+                  className="flex items-center gap-3 w-full px-3 py-2 text-neutral-400 hover:bg-neutral-700 hover:text-blue-400 text-sm transition-colors"
+                  onClick={handleNavClick}
+                >
+                  <Settings size={14} />
+                  Manage Organizations
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

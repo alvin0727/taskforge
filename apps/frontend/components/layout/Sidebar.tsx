@@ -15,8 +15,9 @@ import {
   Settings,
   Plus,
   Search,
-  ChevronDown,
+  ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Archive,
   Star,
   Clock,
@@ -34,6 +35,7 @@ import RecentProjectsList from "../ui/sidebar/RecentProjectsList";
 import FavoritesList from "../ui/sidebar/FavoritesList";
 import UserProfileMenu from "../ui/sidebar/UserProfileMenu";
 import SidebarNavLinks from "../ui/sidebar/SidebarNavLinks";
+import Footer from "./Footer";
 
 const navLinks = [
   { name: "Dashboard", href: "/protected/dashboard", icon: Home, iconColor: "text-blue-400" },
@@ -59,6 +61,7 @@ const favorites = [
 export default function Sidebar() {
   const router = require('next/navigation').useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const [avatarMenu, setAvatarMenu] = useState(false);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [favoritesExpanded, setFavoritesExpanded] = useState(true);
@@ -247,13 +250,16 @@ export default function Sidebar() {
       <aside
         ref={sidebarRef}
         className={`
-            fixed top-14 md:top-0 left-0 h-[calc(100vh-3.5rem)] md:h-auto w-72 z-40 bg-neutral-900 border-r border-neutral-800 flex flex-col
-            transition-transform duration-300 ease-in-out
+            fixed top-14 md:top-0 left-0 h-[calc(100vh-3.5rem)] md:h-auto z-40 bg-neutral-900 border-r border-neutral-800 flex flex-col
             ${menuOpen ? "translate-x-0" : "-translate-x-full"}
-            md:relative md:translate-x-0 md:flex md:flex-col md:w-72 md:self-stretch
+            md:relative md:translate-x-0 md:flex md:flex-col md:self-stretch
           `}
+        style={{
+          width: sidebarHidden ? "4rem" : "18rem",
+          transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
       >
-        {/* Header with close button */}
+        {/* Hide/Show Sidebar Button */}
         <div className="flex items-center justify-between p-4 border-b border-neutral-800">
           <Link
             href="/"
@@ -266,93 +272,119 @@ export default function Sidebar() {
               <rect x="12" y="7" width="4" height="10" rx="2" fill="white" />
               <rect x="18" y="7" width="4" height="6" rx="2" fill="white" />
             </svg>
-            TaskForge
+            {!sidebarHidden && 'TaskForge'}
           </Link>
 
-          <button
-            onClick={closeSidebar}
-            aria-label="Close sidebar"
-            className="md:hidden text-neutral-400 hover:text-blue-400 transition-colors p-1 rounded"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => setSidebarHidden((prev) => !prev)}
+              aria-label={sidebarHidden ? "Show sidebar" : "Hide sidebar"}
+              className="hidden md:inline-block text-neutral-400 hover:text-blue-400 transition-colors p-1 rounded"
+            >
+              {sidebarHidden ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            </button>
+            <button
+              onClick={closeSidebar}
+              aria-label="Close sidebar"
+              className="md:hidden text-neutral-400 hover:text-blue-400 transition-colors p-1 rounded"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Organization Section - Enhanced */}
-        <OrganizationDropdown
-          organizations={organizations}
-          activeOrg={activeOrg}
-          orgDropdownOpen={orgDropdownOpen}
-          orgDropdownRef={orgDropdownRef}
-          toggleOrgDropdown={toggleOrgDropdown}
-          handleOrgSelect={handleOrgSelect}
-          handleNavClick={handleNavClick}
-        />
+        {!sidebarHidden && (
+          <OrganizationDropdown
+            organizations={organizations}
+            activeOrg={activeOrg}
+            orgDropdownOpen={orgDropdownOpen}
+            orgDropdownRef={orgDropdownRef}
+            toggleOrgDropdown={toggleOrgDropdown}
+            handleOrgSelect={handleOrgSelect}
+            handleNavClick={handleNavClick}
+          />
+        )}
 
         {/* Search Bar */}
-        <div className="p-4 border-b border-neutral-800">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
-            <input
-              type="text"
-              placeholder="Search tasks, projects..."
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-neutral-300 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
-            />
+        {!sidebarHidden && (
+          <div className="p-4 border-b border-neutral-800">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
+              <input
+                type="text"
+                placeholder="Search tasks, projects..."
+                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-neutral-300 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Quick Actions */}
-        <div className="p-4 border-b border-neutral-800">
-          <div className="flex gap-2">
-            {quickActions.map((action) => (
-              <button
-                key={action.name}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 justify-center"
-                onClick={handleNavClick}
-              >
-                <action.icon size={16} />
-                {action.name}
-              </button>
-            ))}
+        {!sidebarHidden && (
+          <div className="p-4 border-b border-neutral-800">
+            <div className="flex gap-2">
+              {quickActions.map((action) => (
+                <button
+                  key={action.name}
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 justify-center"
+                  onClick={handleNavClick}
+                >
+                  <action.icon size={16} />
+                  {action.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-          {/* Main Navigation */}
-          <SidebarNavLinks
-            navLinks={navLinks}
-            handleNavClick={handleNavClick}
-          />
+          {!sidebarHidden && (
+            <>
+              {/* Main Navigation */}
+              <SidebarNavLinks
+                navLinks={navLinks}
+                handleNavClick={handleNavClick}
+              />
 
-          {/* Recent Projects Section */}
-          <RecentProjectsList
-            recentProjects={recentProjects}
-            projectsExpanded={projectsExpanded}
-            setProjectsExpanded={setProjectsExpanded}
-            router={router}
-            handleNavClick={handleNavClick}
-          />
+              {/* Recent Projects Section */}
+              <RecentProjectsList
+                recentProjects={recentProjects}
+                projectsExpanded={projectsExpanded}
+                setProjectsExpanded={setProjectsExpanded}
+                router={router}
+                handleNavClick={handleNavClick}
+              />
 
-          {/* Favorites Section */}
-          <FavoritesList
-            favorites={favorites}
-            favoritesExpanded={favoritesExpanded}
-            setFavoritesExpanded={setFavoritesExpanded}
-            handleNavClick={handleNavClick}
-          />
+              {/* Favorites Section */}
+              <FavoritesList
+                favorites={favorites}
+                favoritesExpanded={favoritesExpanded}
+                setFavoritesExpanded={setFavoritesExpanded}
+                handleNavClick={handleNavClick}
+              />
+            </>
+          )}
+          {sidebarHidden && (
+            <div className="hidden md:block w-full h-full flex-col justify-end">
+              <Footer />
+            </div>
+          )}
         </div>
 
         {/* User Profile Section */}
-        <UserProfileMenu
-          user={user}
-          initial={initial}
-          avatarMenu={avatarMenu}
-          avatarRef={avatarRef}
-          toggleAvatarMenu={toggleAvatarMenu}
-          closeAvatarMenu={closeAvatarMenu}
-          handleNavClick={handleNavClick}
-        />
+        {!sidebarHidden && (
+          <UserProfileMenu
+            user={user}
+            initial={initial}
+            avatarMenu={avatarMenu}
+            avatarRef={avatarRef}
+            toggleAvatarMenu={toggleAvatarMenu}
+            closeAvatarMenu={closeAvatarMenu}
+            handleNavClick={handleNavClick}
+          />
+        )}
       </aside>
 
       {/* Add padding for mobile to account for top bar */}
