@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useSearchParams } from "next/navigation";
@@ -22,13 +21,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Plus, MoreHorizontal, Filter, Search } from 'lucide-react';
 import boardService from "@/services/board/boardService";
 import taskService from "@/services/task/taskService";
 import { useBoardStore } from "@/stores/boardStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { Board, BoardColumn } from "@/lib/types/board";
 import { Task } from "@/lib/types/task";
+import { useSidebarStore } from "@/stores/sidebarStore";
 import TaskCard from "@/components/ui/task/TaskCard";
+import Loading from "@/components/layout/Loading";
 
 function DroppableColumn({
   column,
@@ -44,24 +46,34 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      className="bg-gray-100 dark:bg-gray-800 p-4 rounded-xl shadow min-h-[300px] transition-colors"
+      className="bg-neutral-900 border border-neutral-800 rounded-md shadow-sm min-h-[200px] transition-colors hover:border-neutral-700"
     >
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-          {column.name}
-        </h2>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-semibold text-neutral-100">
+            {column.name}
+          </h2>
+          <span className="px-2 py-1 text-xs font-medium bg-neutral-800 text-neutral-400 rounded-full">
             {tasks.length}
           </span>
           {column.task_limit && (
-            <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full">
-              Max: {column.task_limit}
+            <span className="px-2 py-1 text-xs bg-neutral-700 text-neutral-300 rounded-full">
+              Max {column.task_limit}
             </span>
           )}
         </div>
+        <div className="flex items-center gap-1">
+          <button className="p-1.5 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 rounded-lg transition-colors">
+            <Plus size={14} />
+          </button>
+          <button className="p-1.5 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 rounded-lg transition-colors">
+            <MoreHorizontal size={14} />
+          </button>
+        </div>
       </div>
-      {children}
+      <div className="p-3 h-[calc(100%-4rem)] overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-500">
+        {children}
+      </div>
     </div>
   );
 }
@@ -89,6 +101,7 @@ function SortableTaskCard({ task }: { task: Task }) {
       {...attributes}
       {...listeners}
       data-task-card
+      className="mb-3"
     >
       <TaskCard task={task} isDragging={isDragging} />
     </div>
@@ -116,6 +129,8 @@ export default function BoardPage() {
     isDragging: false
   });
 
+  const sidebarHidden = useSidebarStore((state) => state.hidden);
+
   useEffect(() => {
     if (!projectId) return;
 
@@ -129,7 +144,8 @@ export default function BoardPage() {
         const boardData = boardResponse.board || boardResponse.boards;
 
         if (!boardData) {
-          throw new Error("Board data not found");
+          setLoading(false);
+          return;
         }
 
         setBoard(boardData);
@@ -154,7 +170,7 @@ export default function BoardPage() {
         setLoading(false);
       } catch (err) {
         console.error("Error fetching board data:", err);
-        setError("Gagal mengambil data board");
+        setError("Failed to load board data");
         setLoading(false);
       }
     };
@@ -271,7 +287,7 @@ export default function BoardPage() {
         } catch (error) {
           // Revert on error
           setTasksByColumn(previousState);
-          setError("Gagal memindahkan task. Silakan coba lagi.");
+          setError("Failed to move task. Please try again.");
         }
       }
       return;
@@ -310,7 +326,7 @@ export default function BoardPage() {
         } catch (error) {
           // Revert on error
           setTasksByColumn(previousState);
-          setError("Gagal mengubah urutan task. Silakan coba lagi.");
+          setError("Failed to reorder tasks. Please try again.");
         }
       }
     } else {
@@ -325,40 +341,45 @@ export default function BoardPage() {
       } catch (error) {
         // Revert on error
         setTasksByColumn(previousState);
-        setError("Gagal memindahkan task. Silakan coba lagi.");
+        setError("Failed to move task. Please try again.");
       }
     }
   };
 
   if (!projectId) {
     return (
-      <div className="p-8 text-center text-neutral-400">
-        <h2 className="text-xl font-bold mb-2">Board Overview</h2>
-        <p>Pilih project dari sidebar untuk melihat board task.</p>
+      <div className="flex items-center justify-center h-[calc(100vh-200px)] bg-neutral-950">
+        <div className="text-center">
+          <div className="mb-4 text-6xl">📋</div>
+          <h2 className="text-xl font-semibold text-neutral-100 mb-2">No Project Selected</h2>
+          <p className="text-neutral-400">Select a project from the sidebar to view its board.</p>
+        </div>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="p-8 text-center text-neutral-400">
-        <h2 className="text-xl font-bold mb-2">Loading Board...</h2>
+      <div className="fixed inset-0 bg-neutral-950 md:ml-[18rem] h-screen flex items-center justify-center">
+        <Loading />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-8 text-center text-red-400">
-        <h2 className="text-xl font-bold mb-2">{error}</h2>
-      </div>
-    );
-  }
-
-  if (!board) {
-    return (
-      <div className="p-8 text-center text-neutral-400">
-        <h2 className="text-xl font-bold mb-2">Board tidak ditemukan</h2>
+      <div className="flex items-center justify-center h-[calc(100vh-200px)] bg-neutral-950">
+        <div className="text-center">
+          <div className="mb-4 text-6xl">⚠️</div>
+          <h2 className="text-xl font-semibold text-red-400 mb-2">Error</h2>
+          <p className="text-neutral-400">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -370,51 +391,90 @@ export default function BoardPage() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="max-w-7xl mx-auto px-6 py-6" >
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {board.name}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Project ID: {board.project_id}
-          </p>
-        </div>
+      <div
+        className="fixed inset-0 bg-neutral-950 h-screen transition-all duration-300"
+        style={{
+          marginLeft: sidebarHidden ? '4rem' : '18rem',
+        }}
+      >
+        <div className="w-full h-screen px-2 pt-6">
+          {board && (
+            <div className="flex items-center justify-between mb-6 border-b border-neutral-800 pb-4">
+              <div className="flex items-center gap-4 ml-10">
+                <h1 className="text-2xl font-bold text-neutral-100">
+                  {board?.name}
+                </h1>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 text-xs bg-neutral-800 text-neutral-400 rounded-full">
+                    {Object.values(tasksByColumn).reduce((total, tasks) => total + tasks.length, 0)} tasks
+                  </span>
+                  <span className="px-2 py-1 text-xs bg-neutral-800 text-neutral-400 rounded-full">
+                    {board?.columns.length} columns
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search tasks..."
+                    className="pl-9 pr-4 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-neutral-100 placeholder-neutral-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <button className="p-2 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 rounded-lg transition-colors">
+                  <Filter size={16} />
+                </button>
+                <button className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                  <Plus size={16} />
+                  Add Task
+                </button>
+              </div>
+            </div>
+          )}
+          {/* Board Grid */}
+          <div
+            ref={gridRef}
+            className="grid grid-flow-col auto-cols-[320px] sm:auto-cols-[340px] md:auto-cols-[360px] gap-4 h-[calc(100vh-110px)] min-h-0 max-h-none overflow-x-auto rounded-sm select-none"
+            onMouseDown={handleMouseDown}
+            style={{
+              cursor: isScrolling ? 'grabbing' : 'grab',
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#404040 #171717',
+              overscrollBehaviorX: 'none',
+              width: '100%',
+            }}
+          >
+            {board?.columns
+              .sort((a, b) => a.position - b.position)
+              .map((column) => {
+                const columnTasks = tasksByColumn[column.id] || [];
 
-        <div
-          ref={gridRef}
-          className="grid grid-flow-col auto-cols-[320px] sm:auto-cols-[340px] md:auto-cols-[360px] gap-4 h-[calc(100vh-200px)] overflow-x-hidden pb-2 rounded-md select-none"
-          onMouseDown={handleMouseDown}
-          style={{
-            cursor: isScrolling ? 'grabbing' : 'grab',
-            scrollbarWidth: 'none', // hide scrollbar
-            msOverflowStyle: 'none', // IE and Edge
-            overscrollBehaviorX: 'none', // prevent scroll chaining
-          }}
-        >
-          {board.columns
-            .sort((a, b) => a.position - b.position)
-            .map((column) => {
-              const columnTasks = tasksByColumn[column.id] || [];
-
-              return (
-                <DroppableColumn
-                  key={column.id}
-                  column={column}
-                  tasks={columnTasks}
-                >
-                  <SortableContext
-                    items={columnTasks.map(task => task.id)}
-                    strategy={verticalListSortingStrategy}
+                return (
+                  <DroppableColumn
+                    key={column.id}
+                    column={column}
+                    tasks={columnTasks}
                   >
-                    {columnTasks.map((task) =>
-                      task.id === activeId ? null : (
-                        <SortableTaskCard key={task.id} task={task} />
-                      )
+                    <SortableContext
+                      items={columnTasks.map(task => task.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {columnTasks.map((task) =>
+                        task.id === activeId ? null : (
+                          <SortableTaskCard key={task.id} task={task} />
+                        )
+                      )}
+                    </SortableContext>
+                    {columnTasks.length === 0 && (
+                      <div className="flex items-center justify-center h-32 text-neutral-500 text-sm border-2 border-dashed border-neutral-700 rounded-lg">
+                        Drop tasks here
+                      </div>
                     )}
-                  </SortableContext>
-                </DroppableColumn>
-              );
-            })}
+                  </DroppableColumn>
+                );
+              })}
+          </div>
         </div>
       </div>
 

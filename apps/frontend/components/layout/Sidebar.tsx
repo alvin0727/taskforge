@@ -28,6 +28,7 @@ import { useOrganizationStore } from "@/stores/organizationStore";
 import organizationService from "@/services/organization/organizationService";
 import projectService from "@/services/projects/projectService";
 import { useUserStore } from "@/stores/userStore";
+import { useSidebarStore } from "@/stores/sidebarStore";
 import { Organization } from "@/lib/types/organization";
 import { SidebarProject } from "@/lib/types/project";
 import OrganizationDropdown from "../ui/sidebar/OrganizationDropdown";
@@ -61,7 +62,8 @@ const favorites = [
 export default function Sidebar() {
   const router = require('next/navigation').useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const sidebarHidden = useSidebarStore((state) => state.hidden);
+  const setSidebarHidden = useSidebarStore((state) => state.setHidden);
   const [avatarMenu, setAvatarMenu] = useState(false);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [favoritesExpanded, setFavoritesExpanded] = useState(true);
@@ -101,7 +103,7 @@ export default function Sidebar() {
             id: p.id,
             name: p.name,
             color: p.color,
-            stats: { todo_tasks: p.task_count ?? 0 }
+            task_count: p.task_count ?? 0
           }));
           setRecentProjects(mapped);
         } else {
@@ -253,13 +255,14 @@ export default function Sidebar() {
             fixed top-14 md:top-0 left-0 h-[calc(100vh-3.5rem)] md:h-auto z-40 bg-neutral-900 border-r border-neutral-800 flex flex-col
             ${menuOpen ? "translate-x-0" : "-translate-x-full"}
             md:relative md:translate-x-0 md:flex md:flex-col md:self-stretch
+            ${sidebarHidden ? "md:w-16" : "md:w-[18rem]"}
           `}
         style={{
           width: sidebarHidden ? "4rem" : "18rem",
           transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        {/* Hide/Show Sidebar Button */}
+        {/* Hide/Show Sidebar Button (desktop only) */}
         <div className="flex items-center justify-between p-4 border-b border-neutral-800">
           <Link
             href="/"
@@ -277,7 +280,7 @@ export default function Sidebar() {
 
           <div className="flex gap-2 items-center">
             <button
-              onClick={() => setSidebarHidden((prev) => !prev)}
+              onClick={() => setSidebarHidden(!sidebarHidden)}
               aria-label={sidebarHidden ? "Show sidebar" : "Hide sidebar"}
               className="hidden md:inline-block text-neutral-400 hover:text-blue-400 transition-colors p-1 rounded"
             >
@@ -294,7 +297,8 @@ export default function Sidebar() {
         </div>
 
         {/* Organization Section - Enhanced */}
-        {!sidebarHidden && (
+        {/* Only hide in desktop, mobile tetap tampil */}
+        {(menuOpen || !sidebarHidden) && (
           <OrganizationDropdown
             organizations={organizations}
             activeOrg={activeOrg}
@@ -307,7 +311,7 @@ export default function Sidebar() {
         )}
 
         {/* Search Bar */}
-        {!sidebarHidden && (
+        {(menuOpen || !sidebarHidden) && (
           <div className="p-4 border-b border-neutral-800">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
@@ -321,7 +325,7 @@ export default function Sidebar() {
         )}
 
         {/* Quick Actions */}
-        {!sidebarHidden && (
+        {(menuOpen || !sidebarHidden) && (
           <div className="p-4 border-b border-neutral-800">
             <div className="flex gap-2">
               {quickActions.map((action) => (
@@ -340,7 +344,7 @@ export default function Sidebar() {
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-          {!sidebarHidden && (
+          {(menuOpen || !sidebarHidden) && (
             <>
               {/* Main Navigation */}
               <SidebarNavLinks
@@ -366,7 +370,7 @@ export default function Sidebar() {
               />
             </>
           )}
-          {sidebarHidden && (
+          {sidebarHidden && !menuOpen && (
             <div className="hidden md:block w-full h-full flex-col justify-end">
               <Footer />
             </div>
@@ -374,7 +378,7 @@ export default function Sidebar() {
         </div>
 
         {/* User Profile Section */}
-        {!sidebarHidden && (
+        {(menuOpen || !sidebarHidden) && (
           <UserProfileMenu
             user={user}
             initial={initial}
