@@ -20,6 +20,8 @@ export async function updateTaskStatus(
     const res = await api.patch(`/tasks/update-status`, task);
     return res.data;
 }
+
+
 export default {
     getTaskByBoard,
     updateTaskPosition,

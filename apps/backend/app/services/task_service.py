@@ -24,7 +24,7 @@ class TaskService:
             project_id = ObjectId(task_data.project_id)
             
             # Verify user has access to project
-            access = await verify_user_access_to_project(user_id, project_id)
+            await verify_user_access_to_project(user_id, project_id)
             
             # Get the board and validate column_id if provided
             board = None
@@ -305,29 +305,24 @@ class TaskService:
         project_id: ObjectId,
         board_id: Optional[str],
         column_id: str
-    ) -> float:
-        """Get the next position for a task in a specific column"""
+    ) -> int:
+        """Get the next position for a task in a specific column (start from 0, increment by 1)"""
         try:
             query = {
                 "project_id": project_id,
                 "column_id": column_id,
                 "archived": False
             }
-            
             if board_id:
                 query["board_id"] = ObjectId(board_id)
-            
-            # Find the task with the highest position in this column
             last_task = await db["tasks"].find_one(
                 query,
                 sort=[("position", -1)]
             )
-            
-            return (last_task["position"] + 1000) if last_task else 1000.0
-            
+            return (last_task["position"] + 1) if last_task else 0
         except Exception as e:
             logger.error(f"Failed to get next position: {str(e)}")
-            return 1000.0
+            return 0
 
     @staticmethod
     def _map_column_to_status(column_id: str) -> TaskStatus:

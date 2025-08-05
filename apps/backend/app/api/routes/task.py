@@ -12,7 +12,7 @@ from app.api.dependencies import get_current_user
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.post("/")
+@router.post("/create-task")
 async def create_task(
     task_data: TaskCreateRequest,
     current_user: str = Depends(get_current_user)

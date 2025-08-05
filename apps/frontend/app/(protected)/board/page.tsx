@@ -21,7 +21,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, Filter, Search } from 'lucide-react';
+import { Plus, MoreHorizontal, Filter, Search, X } from 'lucide-react';
 import boardService from "@/services/board/boardService";
 import taskService from "@/services/task/taskService";
 import { useBoardStore } from "@/stores/boardStore";
@@ -31,15 +31,19 @@ import { Task } from "@/lib/types/task";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import TaskCard from "@/components/ui/task/TaskCard";
 import Loading from "@/components/layout/Loading";
+import TaskForm from "@/components/ui/task/TaskForm";
+import { RequestTaskCreate, TaskPriority } from "@/lib/types/task";
 
 function DroppableColumn({
   column,
   tasks,
-  children
+  children,
+  onAddTask
 }: {
   column: BoardColumn;
   tasks: Task[];
   children: React.ReactNode;
+  onAddTask: (columnId: string) => void;
 }) {
   const { setNodeRef } = useDroppable({ id: column.id });
 
@@ -63,7 +67,10 @@ function DroppableColumn({
           )}
         </div>
         <div className="flex items-center gap-1">
-          <button className="p-1.5 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 rounded-lg transition-colors">
+          <button 
+            className="p-1.5 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 rounded-lg transition-colors"
+            onClick={() => onAddTask(column.id)}
+          >
             <Plus size={14} />
           </button>
           <button className="p-1.5 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 rounded-lg transition-colors">
@@ -121,6 +128,10 @@ export default function BoardPage() {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isTaskDragging, setIsTaskDragging] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [hoveredColumnId, setHoveredColumnId] = useState<string | null>(null);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollData = useRef({
@@ -195,6 +206,29 @@ export default function BoardPage() {
 
   const sensors = useSensors(mouseSensor, touchSensor);
 
+  // Helper to get sidebar margin (responsive, SSR safe)
+  const [sidebarMargin, setSidebarMargin] = useState('0');
+  const [topMargin, setTopMargin] = useState('0');
+  const [bottomPadding, setBottomPadding] = useState('0');
+
+  useEffect(() => {
+    // Set margin and padding on client only
+    function updateMargin() {
+      if (window.innerWidth >= 768) {
+        setSidebarMargin(sidebarHidden ? '4rem' : '18rem');
+        setTopMargin('0');
+        setBottomPadding('0');
+      } else {
+        setSidebarMargin('0');
+        setTopMargin('56px');
+        setBottomPadding('56px');
+      }
+    }
+    updateMargin();
+    window.addEventListener('resize', updateMargin);
+    return () => window.removeEventListener('resize', updateMargin);
+  }, [sidebarHidden]);
+
   // Drag-to-scroll functionality
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isTaskDragging) return;
@@ -252,7 +286,7 @@ export default function BoardPage() {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
-    setTimeout(() => setActiveId(null), 100);
+    setActiveId(null);
     setActiveTask(null);
     setIsTaskDragging(false);
 
@@ -341,7 +375,10 @@ export default function BoardPage() {
 
       try {
         // Call backend service to update task status
-        // await boardService.updateTaskStatus(board.id, activeTaskId, targetColumnId);
+        await taskService.updateTaskStatus({
+          task_id: activeTaskId,
+          new_column_id: targetColumnId
+        });
       } catch (error) {
         // Revert on error
         setTasksByColumn(previousState);
@@ -350,33 +387,58 @@ export default function BoardPage() {
     }
   };
 
-  // Helper to get sidebar margin (responsive, SSR safe)
-  const [sidebarMargin, setSidebarMargin] = useState('0');
-  const [topMargin, setTopMargin] = useState('0');
-  const [bottomPadding, setBottomPadding] = useState('0');
+  // Handler for adding new task
+  const handleAddTask = (columnId: string) => {
+    setSelectedColumnId(columnId);
+    setShowTaskForm(true);
+  };
 
-  useEffect(() => {
-    // Set margin and padding on client only
-    function updateMargin() {
-      if (window.innerWidth >= 768) {
-        setSidebarMargin(sidebarHidden ? '4rem' : '18rem');
-        setTopMargin('0');
-        setBottomPadding('0');
-      } else {
-        setSidebarMargin('0');
-        setTopMargin('56px');
-        setBottomPadding('56px'); // mobile bottom padding, adjust if needed
+  // Handler submit task
+  const handleCreateTask = async (data: RequestTaskCreate) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Pastikan column_id, board_id, project_id sudah terisi
+      const payload: RequestTaskCreate = {
+        ...data,
+        column_id: selectedColumnId || data.column_id,
+        board_id: board?.id || data.board_id,
+        project_id: projectId || data.project_id,
+      };
+      // await taskService.createTask(payload);
+      console.log("Creating task with payload:", payload);
+      setShowTaskForm(false);
+      setSelectedColumnId(null);
+      
+      // Refresh tasks
+      if (board?.id) {
+        const tasksResponse = await taskService.getTasksByBoard(board.id);
+        const allTasks: Task[] = [];
+        const tasksByColumn: Record<string, Task[]> = tasksResponse.tasks || {};
+        Object.entries(tasksByColumn).forEach(([columnId, columnTasks]) => {
+          columnTasks.forEach((task: Task) => {
+            allTasks.push({
+              ...task,
+              status: task.status || columnId
+            });
+          });
+        });
+        setTasks(allTasks);
       }
+    } catch (err) {
+      console.error("Error creating task:", err);
+      setError("Failed to create task");
     }
-    updateMargin();
-    window.addEventListener('resize', updateMargin);
-    return () => window.removeEventListener('resize', updateMargin);
-  }, [sidebarHidden]);
+    setLoading(false);
+  };
 
-  // Helper to get top margin for mobile (header height 56px)
-  const getTopMargin = () => {
-    if (typeof window === "undefined") return '0';
-    return window.innerWidth < 768 ? '56px' : '0';
+  // Filter tasks based on search query
+  const filterTasks = (tasks: Task[]) => {
+    if (!searchQuery.trim()) return tasks;
+    return tasks.filter(task => 
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   };
 
   if (!projectId) {
@@ -393,7 +455,7 @@ export default function BoardPage() {
 
   if (loading) {
     return (
-      <div 
+      <div
         className="fixed inset-0 bg-neutral-950 h-screen flex items-center justify-center transition-all duration-300"
         style={{
           marginLeft: sidebarMargin,
@@ -408,7 +470,7 @@ export default function BoardPage() {
 
   if (error) {
     return (
-      <div 
+      <div
         className="flex items-center justify-center h-[calc(100vh-200px)] bg-neutral-950"
         style={{
           marginLeft: sidebarMargin,
@@ -451,14 +513,14 @@ export default function BoardPage() {
             <div className="flex items-center justify-between mb-6 border-b border-neutral-800 pb-4">
               <div className="flex items-center gap-4 ml-2 md:ml-10">
                 <h1 className="text-xl md:text-2xl font-bold text-neutral-100">
-                  {board?.name}
+                  {board.name}
                 </h1>
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-1 text-xs bg-neutral-800 text-neutral-400 rounded-full">
                     {Object.values(tasksByColumn).reduce((total, tasks) => total + tasks.length, 0)} tasks
                   </span>
                   <span className="px-2 py-1 text-xs bg-neutral-800 text-neutral-400 rounded-full">
-                    {board?.columns.length} columns
+                    {board.columns.length} columns
                   </span>
                 </div>
               </div>
@@ -468,6 +530,8 @@ export default function BoardPage() {
                   <input
                     type="text"
                     placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 pr-4 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-neutral-100 placeholder-neutral-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -477,6 +541,7 @@ export default function BoardPage() {
               </div>
             </div>
           )}
+          
           {/* Board Grid - Horizontal scrolling layout */}
           <div
             ref={gridRef}
@@ -492,16 +557,19 @@ export default function BoardPage() {
             {board?.columns
               .sort((a, b) => a.position - b.position)
               .map((column) => {
-                const columnTasks = tasksByColumn[column.id] || [];
+                const columnTasks = filterTasks(tasksByColumn[column.id] || []);
 
                 return (
-                  <div 
+                  <div
                     key={column.id}
                     className="w-[320px] flex-shrink-0 h-full"
+                    onMouseEnter={() => setHoveredColumnId(column.id)}
+                    onMouseLeave={() => setHoveredColumnId(null)}
                   >
                     <DroppableColumn
                       column={column}
                       tasks={columnTasks}
+                      onAddTask={handleAddTask}
                     >
                       <SortableContext
                         items={columnTasks.map(task => task.id)}
@@ -512,7 +580,18 @@ export default function BoardPage() {
                             <SortableTaskCard key={task.id} task={task} />
                           )
                         )}
+                        
+                        {/* Add card "+" on hover */}
+                        {hoveredColumnId === column.id && (
+                          <div
+                            className="flex items-center justify-center h-8 mt-2 bg-neutral-800 border-1 border-neutral-600 rounded-md cursor-pointer transition-all hover:bg-neutral-700 hover:border-neutral-500"
+                            onClick={() => handleAddTask(column.id)}
+                          >
+                            <Plus size={20} className="text-neutral-400" />
+                          </div>
+                        )}
                       </SortableContext>
+                      
                       {columnTasks.length === 0 && (
                         <div className="flex items-center justify-center h-32 text-neutral-500 text-sm border-2 border-dashed border-neutral-700 rounded-lg">
                           Drop tasks here
@@ -523,6 +602,23 @@ export default function BoardPage() {
                 );
               })}
           </div>
+
+          {/* Modal TaskForm */}
+          {showTaskForm && (
+            <TaskForm
+              onSubmit={handleCreateTask}
+              loading={loading}
+              onClose={() => {
+                setShowTaskForm(false);
+                setSelectedColumnId(null);
+              }}
+              defaultValues={{
+                project_id: projectId || "",
+                board_id: board?.id || "",
+                column_id: selectedColumnId || "",
+              }}
+            />
+          )}
         </div>
       </div>
 

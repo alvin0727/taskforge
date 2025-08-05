@@ -8,8 +8,8 @@ class TaskCreateRequest(BaseModel):
     description: Optional[str] = None
     priority: TaskPriority = TaskPriority.MEDIUM
     project_id: str
-    board_id: Optional[str] = None
-    column_id: Optional[str] = None
+    board_id: str
+    column_id: str
     assignee_id: Optional[str] = None
     due_date: Optional[datetime] = None
     estimated_hours: Optional[float] = None
@@ -22,4 +22,3 @@ class TaskUpdatePositionRequest(BaseModel):
 class TaskUpdateStatusRequest(BaseModel):
     task_id: str
     new_column_id: str
-    
