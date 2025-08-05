@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { TaskPriority, RequestTaskCreate } from "@/lib/types/task";
 import { Plus, Calendar, User, Clock, Tag, X, ChevronDown, Signal, SignalHigh, SignalMedium, SignalLow, Minus } from "lucide-react";
 import { useSidebarStore } from "@/stores/sidebarStore";
+import LoadingButton from "@/components/ui/loading/LoadingButton";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -732,13 +733,14 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                   Cancel
                 </button>
               )}
-              <button
+              <LoadingButton
                 type="submit"
+                loading={loading}
                 disabled={loading || !form.title.trim()}
                 className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
               >
-                {loading ? "Creating..." : "Create Task"}
-              </button>
+                Create Task
+              </LoadingButton>
             </div>
           </form>
         </div>

@@ -29,13 +29,16 @@ import organizationService from "@/services/organization/organizationService";
 import projectService from "@/services/projects/projectService";
 import { useUserStore } from "@/stores/userStore";
 import { useSidebarStore } from "@/stores/sidebarStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { Organization } from "@/lib/types/organization";
+import { RequestCreateProject } from "@/lib/types/project";
 import { SidebarProject } from "@/lib/types/project";
 import OrganizationDropdown from "../ui/sidebar/OrganizationDropdown";
 import RecentProjectsList from "../ui/sidebar/RecentProjectsList";
 import FavoritesList from "../ui/sidebar/FavoritesList";
 import UserProfileMenu from "../ui/sidebar/UserProfileMenu";
 import SidebarNavLinks from "../ui/sidebar/SidebarNavLinks";
+import ProjectForm from "@/components/ui/project/ProjectForm";
 import Footer from "./Footer";
 
 const navLinks = [
@@ -76,7 +79,10 @@ export default function Sidebar() {
   const organizations = useOrganizationStore((state) => state.organizations);
   const activeOrg = useOrganizationStore((state) => state.activeOrg);
   const setActiveOrg = useOrganizationStore((state) => state.setActiveOrg);
-  const [recentProjects, setRecentProjects] = useState<SidebarProject[]>([]);
+  const recentProjects = useProjectStore((state) => state.projects);
+  const setProjects = useProjectStore((state) => state.setProjects);
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [projectFormLoading, setProjectFormLoading] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -99,15 +105,7 @@ export default function Sidebar() {
 
           // Fetch recent projects after activeOrg has been set
           const response = await projectService.getSideBarProject(activeOrg.id);
-          const mapped = (response.projects || []).map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            color: p.color,
-            task_count: p.task_count ?? 0
-          }));
-          setRecentProjects(mapped);
-        } else {
-          setRecentProjects([]);
+          setProjects(response.projects || []);
         }
       } catch (err) {
         console.error("Failed to fetch organizations or recent projects", err);
@@ -217,6 +215,18 @@ export default function Sidebar() {
     closeOrgDropdown();
   }, [closeSidebar, closeAvatarMenu, closeOrgDropdown]);
 
+  const handleCreateProject = async (data: RequestCreateProject) => {
+    setProjectFormLoading(true);
+    try {
+      const result = await projectService.createNewProject(data);
+      setProjectFormLoading(false);
+      return result.project; // Return the created project
+    } catch (err) {
+      setProjectFormLoading(false);
+      throw err;
+    }
+  };
+
   return (
     <>
       {/* Top bar with hamburger and notifications for mobile */}
@@ -297,7 +307,7 @@ export default function Sidebar() {
         </div>
 
         {/* Organization Section - Enhanced */}
-        {/* Only hide in desktop, mobile tetap tampil */}
+        {/* Only hide in desktop, mobile always show */}
         {(menuOpen || !sidebarHidden) && (
           <OrganizationDropdown
             organizations={organizations}
@@ -332,7 +342,7 @@ export default function Sidebar() {
                 <button
                   key={action.name}
                   className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 justify-center"
-                  onClick={handleNavClick}
+                  onClick={action.action === "create-project" ? () => setShowProjectForm(true) : handleNavClick}
                 >
                   <action.icon size={16} />
                   {action.name}
@@ -393,6 +403,14 @@ export default function Sidebar() {
 
       {/* Add padding for mobile to account for top bar */}
       <div className="md:hidden h-14"></div>
+
+      {showProjectForm && (
+        <ProjectForm
+          onSubmit={handleCreateProject}
+          loading={projectFormLoading}
+          onClose={() => setShowProjectForm(false)}
+        />
+      )}
     </>
   );
 }

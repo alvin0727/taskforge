@@ -123,6 +123,7 @@ export default function BoardPage() {
   const { tasksByColumn, setTasks, updateTaskStatus, reorderTasks, setTasksByColumn } = useTaskStore();
 
   const [loading, setLoading] = useState(false);
+  const [taskFormLoading, setTaskFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -395,7 +396,7 @@ export default function BoardPage() {
 
   // Handler submit task
   const handleCreateTask = async (data: RequestTaskCreate) => {
-    setLoading(true);
+    setTaskFormLoading(true);
     setError(null);
     try {
       const payload: RequestTaskCreate = {
@@ -419,7 +420,7 @@ export default function BoardPage() {
       console.error("Error creating task:", err);
       setError("Failed to create task");
     }
-    setLoading(false);
+    setTaskFormLoading(false);
   };
 
   // Filter tasks based on search query
@@ -505,14 +506,6 @@ export default function BoardPage() {
                 <h1 className="text-xl md:text-2xl font-bold text-neutral-100">
                   {board.name}
                 </h1>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 text-xs bg-neutral-800 text-neutral-400 rounded-full">
-                    {Object.values(tasksByColumn).reduce((total, tasks) => total + tasks.length, 0)} tasks
-                  </span>
-                  <span className="px-2 py-1 text-xs bg-neutral-800 text-neutral-400 rounded-full">
-                    {board.columns.length} columns
-                  </span>
-                </div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative hidden sm:block">
@@ -615,7 +608,7 @@ export default function BoardPage() {
           {showTaskForm && (
             <TaskForm
               onSubmit={handleCreateTask}
-              loading={loading}
+              loading={taskFormLoading}
               onClose={() => {
                 setShowTaskForm(false);
                 setSelectedColumnId(null);

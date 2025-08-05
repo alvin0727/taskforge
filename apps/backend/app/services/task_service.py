@@ -121,8 +121,6 @@ class TaskService:
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
             
-            logger.info("Task found for position update: %s", task)
-            
             # Verify user has access to project
             await verify_user_access_to_project(user_id, task["project_id"])
             

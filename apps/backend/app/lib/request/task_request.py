@@ -6,7 +6,7 @@ from app.models.task import TaskPriority
 class TaskCreateRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
-    priority: TaskPriority = TaskPriority.MEDIUM
+    priority: TaskPriority = TaskPriority.LOW
     project_id: str
     board_id: str
     column_id: str
