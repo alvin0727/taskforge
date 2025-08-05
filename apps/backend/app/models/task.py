@@ -6,11 +6,6 @@ from app.db.base import BaseDocument, PyObjectId
 from app.db.enums import TaskStatus, TaskPriority
 
 
-class TaskLabel(BaseModel):
-    name: str
-    color: str
-
-
 class TaskAttachment(BaseModel):
     filename: str
     file_url: str
@@ -53,7 +48,7 @@ class Task(BaseDocument):
     completed_at: Optional[datetime] = None
     estimated_hours: Optional[float] = None
     actual_hours: Optional[float] = None
-    labels: List[TaskLabel] = []
+    labels: List[str] = []
     attachments: List[TaskAttachment] = []
     comments: List[TaskComment] = []
     time_logs: List[TaskTimeLog] = []
@@ -74,7 +69,7 @@ class TaskCreate(BaseModel):
     assignee_id: Optional[str] = None
     due_date: Optional[datetime] = None
     estimated_hours: Optional[float] = None
-    labels: List[TaskLabel] = []
+    labels: List[str] = []
 
 
 class TaskUpdate(BaseModel):
@@ -85,6 +80,6 @@ class TaskUpdate(BaseModel):
     assignee_id: Optional[str] = None
     due_date: Optional[datetime] = None
     estimated_hours: Optional[float] = None
-    labels: Optional[List[TaskLabel]] = None
+    labels: Optional[List[str]] = None
     column_id: Optional[str] = None
     position: Optional[float] = None

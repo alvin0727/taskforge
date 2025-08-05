@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
-from app.models.task import TaskPriority, TaskLabel
+from app.models.task import TaskPriority
 
 class TaskCreateRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
@@ -13,7 +13,7 @@ class TaskCreateRequest(BaseModel):
     assignee_id: Optional[str] = None
     due_date: Optional[datetime] = None
     estimated_hours: Optional[float] = None
-    labels: List[TaskLabel] = []
+    labels: List[str] = []
     
 class TaskUpdatePositionRequest(BaseModel):
     new_position: float

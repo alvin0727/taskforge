@@ -1,5 +1,5 @@
 import taskAdapter from "@/adapters/api/taskAdapter";
-import { RequestTaskUpdatePosition, Task, RequestTaskUpdateStatus } from "@/lib/types/task";
+import { RequestTaskUpdatePosition, Task, RequestTaskUpdateStatus, RequestTaskCreate } from "@/lib/types/task";
 
 
 export async function getTasksByBoard(boardId: string): Promise<{ tasks: Record<string, Task[]> }> {
@@ -16,8 +16,14 @@ export async function updateTaskStatus(task: RequestTaskUpdateStatus) {
     const res = await taskAdapter.updateTaskStatus(task);
     return res;
 }
+
+export async function createNewTask(task: RequestTaskCreate) {
+    const res = await taskAdapter.createNewTask(task);
+    return res;
+}
 export default {
     getTasksByBoard,
     updateTaskPosition,
-    updateTaskStatus
+    updateTaskStatus,
+    createNewTask
 };

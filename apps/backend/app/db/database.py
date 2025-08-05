@@ -63,8 +63,6 @@ async def ensure_indexes():
 
     # Stats indexes
     await db["project_stats"].create_index([("project_id", 1), ("date", 1)], unique=True)
-    await db["user_stats"].create_index([("user_id", 1), ("date", 1)], unique=True)
-
     # Favorites indexes
     await db["user_favorites"].create_index([("user_id", 1), ("item_type", 1), ("item_id", 1)], unique=True)
 

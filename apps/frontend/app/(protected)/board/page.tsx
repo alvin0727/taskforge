@@ -67,7 +67,7 @@ function DroppableColumn({
           )}
         </div>
         <div className="flex items-center gap-1">
-          <button 
+          <button
             className="p-1.5 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 rounded-lg transition-colors"
             onClick={() => onAddTask(column.id)}
           >
@@ -398,33 +398,23 @@ export default function BoardPage() {
     setLoading(true);
     setError(null);
     try {
-      // Pastikan column_id, board_id, project_id sudah terisi
       const payload: RequestTaskCreate = {
         ...data,
         column_id: selectedColumnId || data.column_id,
         board_id: board?.id || data.board_id,
         project_id: projectId || data.project_id,
       };
-      // await taskService.createTask(payload);
-      console.log("Creating task with payload:", payload);
+      const response = await taskService.createNewTask(payload);
+      const newTask = response.task;
+
+      // Update tasks array, optimistic update
+      if (!newTask) {
+        throw new Error("Failed to create task");
+      }
+      setTasks([...useTaskStore.getState().tasks, newTask]);
+
       setShowTaskForm(false);
       setSelectedColumnId(null);
-      
-      // Refresh tasks
-      if (board?.id) {
-        const tasksResponse = await taskService.getTasksByBoard(board.id);
-        const allTasks: Task[] = [];
-        const tasksByColumn: Record<string, Task[]> = tasksResponse.tasks || {};
-        Object.entries(tasksByColumn).forEach(([columnId, columnTasks]) => {
-          columnTasks.forEach((task: Task) => {
-            allTasks.push({
-              ...task,
-              status: task.status || columnId
-            });
-          });
-        });
-        setTasks(allTasks);
-      }
     } catch (err) {
       console.error("Error creating task:", err);
       setError("Failed to create task");
@@ -435,7 +425,7 @@ export default function BoardPage() {
   // Filter tasks based on search query
   const filterTasks = (tasks: Task[]) => {
     if (!searchQuery.trim()) return tasks;
-    return tasks.filter(task => 
+    return tasks.filter(task =>
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -541,7 +531,7 @@ export default function BoardPage() {
               </div>
             </div>
           )}
-          
+
           {/* Board Grid - Horizontal scrolling layout */}
           <div
             ref={gridRef}
@@ -580,9 +570,33 @@ export default function BoardPage() {
                             <SortableTaskCard key={task.id} task={task} />
                           )
                         )}
-                        
-                        {/* Add card "+" on hover */}
-                        {hoveredColumnId === column.id && (
+
+                        {columnTasks.length === 0 && (
+                          <div className="relative h-32 flex items-center justify-center">
+                            {/* Drop tasks here box */}
+                            <div
+                              className={`absolute inset-0 flex flex-col items-center justify-center text-neutral-500 text-sm border-2 border-dashed border-neutral-700 rounded-lg bg-neutral-900
+                                transition-all duration-300
+                                ${hoveredColumnId === column.id ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"}
+                              `}
+                            >
+                              <span>Drop tasks here or create new</span>
+                            </div>
+                            {/* Plus button */}
+                            <div
+                              className={`absolute inset-0 flex justify-center items-start transition-all duration-300 py-4
+                                ${hoveredColumnId === column.id ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}
+                              `}
+                              onClick={() => handleAddTask(column.id)}
+                            >
+                              <div className="flex items-center justify-center h-8 w-full bg-neutral-800 border border-neutral-600 rounded-md cursor-pointer hover:bg-neutral-700 hover:border-neutral-500">
+                                <Plus size={20} className="text-neutral-400" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {columnTasks.length > 0 && hoveredColumnId === column.id && (
                           <div
                             className="flex items-center justify-center h-8 mt-2 bg-neutral-800 border-1 border-neutral-600 rounded-md cursor-pointer transition-all hover:bg-neutral-700 hover:border-neutral-500"
                             onClick={() => handleAddTask(column.id)}
@@ -591,12 +605,6 @@ export default function BoardPage() {
                           </div>
                         )}
                       </SortableContext>
-                      
-                      {columnTasks.length === 0 && (
-                        <div className="flex items-center justify-center h-32 text-neutral-500 text-sm border-2 border-dashed border-neutral-700 rounded-lg">
-                          Drop tasks here
-                        </div>
-                      )}
                     </DroppableColumn>
                   </div>
                 );

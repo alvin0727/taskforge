@@ -73,7 +73,7 @@ class TaskService:
                 "completed_at": None,
                 "estimated_hours": task_data.estimated_hours,
                 "actual_hours": None,
-                "labels": [label.dict() for label in task_data.labels],
+                "labels": task_data.labels,
                 "attachments": [],
                 "comments": [],
                 "time_logs": [],
