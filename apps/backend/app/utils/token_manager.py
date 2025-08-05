@@ -1,6 +1,7 @@
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from app.config.config import SECRET_KEY, REFRESH_SECRET_KEY, ALGORITHM
+from app.utils.logger import logger
 
 def create_token(user_id: str, email: str, is_verified: bool, expires_minutes: int = 60 * 24):
     expire = datetime.utcnow() + timedelta(minutes=expires_minutes)

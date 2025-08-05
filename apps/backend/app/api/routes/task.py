@@ -1,82 +1,128 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from bson import ObjectId
+from typing import Optional
 from app.utils.logger import logger
 from app.services.task_service import TaskService
-# import app.utils.validators.task_validators as validators
+from app.models.task import TaskCreate
+from app.lib.request.task_request import TaskCreateRequest, TaskUpdatePositionRequest, TaskUpdateStatusRequest
+from app.db.enums import UserRole
+from app.utils.permissions import verify_user_access_to_project
+from app.api.dependencies import get_current_user
 
-
-router = APIRouter()
 router = APIRouter(prefix="/tasks", tags=["tasks"])
-task_service = TaskService()
 
-@router.post("/generate-dummy-tasks")
-async def generate_dummy_tasks(project_id: str, board_id: str, num_tasks: int = 10, creator_id: str = None):
+
+@router.post("/")
+async def create_task(
+    task_data: TaskCreateRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Create a new task.
+    All project members can create tasks.
+    """
     try:
-        result = await task_service.generate_tasks_for_board(project_id, board_id, num_tasks, creator_id)
-        return {"message": "Dummy tasks generated successfully", "task_ids": result}
+        user_id = ObjectId(current_user["id"])
+        result = await TaskService.create_task(user_id, task_data)
+        return {
+            "message": "Task created successfully",
+            "task": result
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error generating dummy tasks: {e}")
+        logger.error(f"Error creating task: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-# @router.patch("/{workflow_id}/parent/{task_id}/status")
-# async def update_parent_task_status(
-#     workflow_id: str,
-#     task_id: str,
-#     body: validators.StatusUpdateRequest
-# ):
-#     new_status = body.new_status
-#     try:
-#         result = await task_service.update_parent_task_status(workflow_id, task_id, new_status)
-#         # result can be either a success message or an object with matched_count
-#         # if result is an int, it means modified_count
-#         if hasattr(result, 'matched_count'):
-#             if result.matched_count > 0:
-#                 logger.info(
-#                     f"Updated task {task_id} status to {new_status} in workflow {workflow_id}")
-#                 return {"message": "Parent task status updated successfully"}
-#             else:
-#                 logger.warning(
-#                     f"Task {task_id} not found in workflow {workflow_id}")
-#                 raise HTTPException(status_code=404, detail="Task not found")
-#         else:
-#             # fallback: if result is an int, it means modified_count
-#             if result:
-#                 logger.info(
-#                     f"Updated task {task_id} status to {new_status} in workflow {workflow_id}")
-#                 return {"message": "Parent task status updated successfully"}
-#             else:
-#                 # modified_count = 0, could mean no change
-#                 # Assume success (idempotent)
-#                 logger.info(
-#                     f"No changes made to task {task_id} in workflow {workflow_id} (status may be the same)")
-#                 return {"message": "Parent task status updated successfully (no changes)"}
-#     except ValueError as e:
-#         logger.warning(f"Validation error: {e}")
-#         raise HTTPException(status_code=400, detail=str(e))
-#     except Exception as e:
-#         logger.error(f"Error updating parent task status: {e}")
-#         raise HTTPException(status_code=500, detail="Internal Server Error")
+@router.patch("/{task_id}/position")
+async def update_task_position(
+    task_id: str,
+    task: TaskUpdatePositionRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Update task position within the same status/column.
+    All project members can update task positions.
+    """
+    try:
+        user_id = ObjectId(current_user["id"])
+        task_object_id = ObjectId(task_id)
+
+        result = await TaskService.update_task_position(
+            user_id,
+            task_object_id,
+            task.new_position,
+            task.column_id
+        )
+        return {
+            "message": "Task position updated successfully",
+            "task": result
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating task position: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-# @router.patch("/{workflow_id}/parent/{task_id}/order")
-# async def update_parent_task_order(
-#     workflow_id: str,
-#     task_id: str,
-#     body: validators.ReorderUpdateRequest
-# ):
-#     try:
-#         result = await task_service.update_parent_task_order(workflow_id, task_id, body.from_order, body.to_order)
-#         if result > 0:
-#             logger.info(
-#                 f"Updated task {task_id} order to {body.to_order} in workflow {workflow_id}")
-#             return {"message": "Parent task order updated successfully"}
-#         else:
-#             logger.warning(
-#                 f"Task {task_id} not found in workflow {workflow_id}")
-#             raise HTTPException(status_code=404, detail="Task not found")
-#     except ValueError as e:
-#         logger.warning(f"Validation error: {e}")
-#         raise HTTPException(status_code=400, detail=str(e))
-#     except Exception as e:
-#         logger.error(f"Error updating parent task order: {e}")
-#         raise HTTPException(status_code=500, detail="Internal Server Error")
+@router.patch("/update-status")
+async def change_task_status(
+    task: TaskUpdateStatusRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Change task status by moving to different column.
+    All project members can change task status.
+    """
+    try:
+        user_id = ObjectId(current_user["id"])
+        task_object_id = ObjectId(task.task_id)
+
+        result = await TaskService.change_task_status(
+            user_id, 
+            task_object_id, 
+            task.new_column_id, 
+        )
+        return {
+            "message": "Task status changed successfully",
+            "task": result
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error changing task status: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+@router.post("/generate-dummy-tasks")
+async def generate_dummy_tasks(
+    project_id: str, 
+    board_id: str, 
+    num_tasks: int = 10, 
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Generate dummy tasks for testing.
+    All project members can generate dummy tasks.
+    """
+    try:
+        # Verify user has access to project
+        user_id = ObjectId(current_user["id"])
+        await verify_user_access_to_project(user_id, ObjectId(project_id))
+        
+        result = await TaskService.generate_tasks_for_board(
+            project_id, 
+            board_id, 
+            num_tasks, 
+            user_id
+        )
+        return {
+            "message": "Dummy tasks generated successfully", 
+            "task_ids": [str(task_id) for task_id in result]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating dummy tasks: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")

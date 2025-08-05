@@ -11,3 +11,13 @@ export interface Task {
   created_at: string;
   updated_at: string;
 }
+
+export interface RequestTaskUpdatePosition{
+  new_position: number;
+  column_id: string;
+}
+
+export interface RequestTaskUpdateStatus {
+  task_id: string;
+  new_column_id: string;
+}

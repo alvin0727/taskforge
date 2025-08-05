@@ -390,13 +390,18 @@ class UserService:
             await dependencies.clear_auth_cookie(response)
 
             # Create a new token for the user
-            token = token_manager.create_token(
+            token_auth = token_manager.create_token(
                 str(user["_id"]),
                 email,
                 user.get("is_verified", False)
             )
+
+            token_refresh = token_manager.create_refresh_token(
+                str(user["_id"]),
+                email
+            )
             # Set new cookies
-            await dependencies.set_auth_cookie(response, token)
+            await dependencies.set_auth_cookie(response, token_auth, token_refresh)
 
             # Ensure profile is a UserProfile instance
             profile = user.get("profile")
@@ -535,7 +540,8 @@ class UserService:
                 is_active=user.get("is_active", True),
                 created_at=user.get("created_at"),
                 last_login=user.get("last_login"),
-                active_organization_id= str(user.get("active_organization_id")) if user.get("active_organization_id") else None
+                active_organization_id=str(user.get("active_organization_id")) if user.get(
+                    "active_organization_id") else None
             )
             return {
                 "message": "Get user successful",
@@ -581,14 +587,18 @@ class UserService:
             await dependencies.clear_auth_cookie(response)
 
             # Generate new access token with user data
-            token = token_manager.create_token(
+            token_auth = token_manager.create_token(
                 str(user["_id"]),
                 user["email"],
                 user.get("is_verified", True)
             )
+            token_refresh = token_manager.create_refresh_token(
+                str(user["_id"]),
+                user["email"]
+            )
 
             # Set new cookies (access and refresh token if implemented in set_auth_cookie)
-            await dependencies.set_auth_cookie(response, token)
+            await dependencies.set_auth_cookie(response, token_auth, token_refresh)
 
             # No return value needed (None)
             return

@@ -46,7 +46,7 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      className="bg-neutral-900 border border-neutral-800 rounded-md shadow-sm min-h-[200px] transition-colors hover:border-neutral-700"
+      className="bg-neutral-900 border border-neutral-800 rounded-md shadow-sm h-full transition-colors hover:border-neutral-700 flex-shrink-0 flex flex-col"
     >
       <div className="flex items-center justify-between p-4 border-b border-neutral-800">
         <div className="flex items-center gap-3">
@@ -71,7 +71,7 @@ function DroppableColumn({
           </button>
         </div>
       </div>
-      <div className="p-3 h-[calc(100%-4rem)] overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-500">
+      <div className="p-3 flex-1 overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-500">
         {children}
       </div>
     </div>
@@ -282,8 +282,10 @@ export default function BoardPage() {
 
         try {
           // Call backend service to update task status
-          // You might need to add this method to your boardService
-          // await boardService.updateTaskStatus(board.id, activeTaskId, targetColumn.id);
+          await taskService.updateTaskStatus({
+            task_id: activeTaskId,
+            new_column_id: targetColumn.id
+          });
         } catch (error) {
           // Revert on error
           setTasksByColumn(previousState);
@@ -321,8 +323,10 @@ export default function BoardPage() {
 
         try {
           // Call backend service to update task positions
-          // You might need to add this method to your boardService
-          // await boardService.updateTaskPositions(board.id, sourceColumnId, reorderedTasks);
+          await taskService.updateTaskPosition({
+            new_position: targetIndex,
+            column_id: sourceColumnId
+          }, activeTaskId);
         } catch (error) {
           // Revert on error
           setTasksByColumn(previousState);
@@ -346,6 +350,35 @@ export default function BoardPage() {
     }
   };
 
+  // Helper to get sidebar margin (responsive, SSR safe)
+  const [sidebarMargin, setSidebarMargin] = useState('0');
+  const [topMargin, setTopMargin] = useState('0');
+  const [bottomPadding, setBottomPadding] = useState('0');
+
+  useEffect(() => {
+    // Set margin and padding on client only
+    function updateMargin() {
+      if (window.innerWidth >= 768) {
+        setSidebarMargin(sidebarHidden ? '4rem' : '18rem');
+        setTopMargin('0');
+        setBottomPadding('0');
+      } else {
+        setSidebarMargin('0');
+        setTopMargin('56px');
+        setBottomPadding('56px'); // mobile bottom padding, adjust if needed
+      }
+    }
+    updateMargin();
+    window.addEventListener('resize', updateMargin);
+    return () => window.removeEventListener('resize', updateMargin);
+  }, [sidebarHidden]);
+
+  // Helper to get top margin for mobile (header height 56px)
+  const getTopMargin = () => {
+    if (typeof window === "undefined") return '0';
+    return window.innerWidth < 768 ? '56px' : '0';
+  };
+
   if (!projectId) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)] bg-neutral-950">
@@ -360,7 +393,14 @@ export default function BoardPage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-neutral-950 md:ml-[18rem] h-screen flex items-center justify-center">
+      <div 
+        className="fixed inset-0 bg-neutral-950 h-screen flex items-center justify-center transition-all duration-300"
+        style={{
+          marginLeft: sidebarMargin,
+          marginTop: topMargin,
+          paddingBottom: bottomPadding,
+        }}
+      >
         <Loading />
       </div>
     );
@@ -368,7 +408,14 @@ export default function BoardPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)] bg-neutral-950">
+      <div 
+        className="flex items-center justify-center h-[calc(100vh-200px)] bg-neutral-950"
+        style={{
+          marginLeft: sidebarMargin,
+          marginTop: topMargin,
+          paddingBottom: bottomPadding,
+        }}
+      >
         <div className="text-center">
           <div className="mb-4 text-6xl">⚠️</div>
           <h2 className="text-xl font-semibold text-red-400 mb-2">Error</h2>
@@ -394,14 +441,16 @@ export default function BoardPage() {
       <div
         className="fixed inset-0 bg-neutral-950 h-screen transition-all duration-300"
         style={{
-          marginLeft: sidebarHidden ? '4rem' : '18rem',
+          marginLeft: sidebarMargin,
+          marginTop: topMargin,
+          paddingBottom: bottomPadding,
         }}
       >
         <div className="w-full h-screen px-2 pt-6">
           {board && (
             <div className="flex items-center justify-between mb-6 border-b border-neutral-800 pb-4">
-              <div className="flex items-center gap-4 ml-10">
-                <h1 className="text-2xl font-bold text-neutral-100">
+              <div className="flex items-center gap-4 ml-2 md:ml-10">
+                <h1 className="text-xl md:text-2xl font-bold text-neutral-100">
                   {board?.name}
                 </h1>
                 <div className="flex items-center gap-2">
@@ -414,7 +463,7 @@ export default function BoardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="relative">
+                <div className="relative hidden sm:block">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={16} />
                   <input
                     type="text"
@@ -425,24 +474,19 @@ export default function BoardPage() {
                 <button className="p-2 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 rounded-lg transition-colors">
                   <Filter size={16} />
                 </button>
-                <button className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
-                  <Plus size={16} />
-                  Add Task
-                </button>
               </div>
             </div>
           )}
-          {/* Board Grid */}
+          {/* Board Grid - Horizontal scrolling layout */}
           <div
             ref={gridRef}
-            className="grid grid-flow-col auto-cols-[320px] sm:auto-cols-[340px] md:auto-cols-[360px] gap-4 h-[calc(100vh-110px)] min-h-0 max-h-none overflow-x-auto rounded-sm select-none"
+            className={`flex gap-4 h-[calc(100vh-110px)] overflow-x-auto overflow-y-hidden ${bottomPadding !== '0' ? 'pb-12' : ''}`}
             onMouseDown={handleMouseDown}
             style={{
               cursor: isScrolling ? 'grabbing' : 'grab',
               scrollbarWidth: 'thin',
               scrollbarColor: '#404040 #171717',
               overscrollBehaviorX: 'none',
-              width: '100%',
             }}
           >
             {board?.columns
@@ -451,27 +495,31 @@ export default function BoardPage() {
                 const columnTasks = tasksByColumn[column.id] || [];
 
                 return (
-                  <DroppableColumn
+                  <div 
                     key={column.id}
-                    column={column}
-                    tasks={columnTasks}
+                    className="w-[320px] flex-shrink-0 h-full"
                   >
-                    <SortableContext
-                      items={columnTasks.map(task => task.id)}
-                      strategy={verticalListSortingStrategy}
+                    <DroppableColumn
+                      column={column}
+                      tasks={columnTasks}
                     >
-                      {columnTasks.map((task) =>
-                        task.id === activeId ? null : (
-                          <SortableTaskCard key={task.id} task={task} />
-                        )
+                      <SortableContext
+                        items={columnTasks.map(task => task.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {columnTasks.map((task) =>
+                          task.id === activeId ? null : (
+                            <SortableTaskCard key={task.id} task={task} />
+                          )
+                        )}
+                      </SortableContext>
+                      {columnTasks.length === 0 && (
+                        <div className="flex items-center justify-center h-32 text-neutral-500 text-sm border-2 border-dashed border-neutral-700 rounded-lg">
+                          Drop tasks here
+                        </div>
                       )}
-                    </SortableContext>
-                    {columnTasks.length === 0 && (
-                      <div className="flex items-center justify-center h-32 text-neutral-500 text-sm border-2 border-dashed border-neutral-700 rounded-lg">
-                        Drop tasks here
-                      </div>
-                    )}
-                  </DroppableColumn>
+                    </DroppableColumn>
+                  </div>
                 );
               })}
           </div>

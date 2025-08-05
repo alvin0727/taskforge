@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useState } from 'react';
-import { UserCircle, Calendar, Clock, CheckCircle, AlertCircle, Play, Pause, ChevronDown, Flame, ArrowUp, Minus, ArrowDown } from 'lucide-react';
+import { UserCircle, Calendar, Clock, CheckCircle, AlertCircle, Play, Pause, ChevronDown, Flame, ArrowUp, Minus, ArrowDown, Ban, Eye, EyeOff } from 'lucide-react';
 import { Task } from '@/lib/types/task';
 import { useRouter } from 'next/navigation';
 
@@ -91,8 +91,12 @@ function TaskCard({ task, isDragging = false, onPriorityChange }: Props) {
         return <AlertCircle size={14} className="text-red-400" />;
       case 'review':
         return <Pause size={14} className="text-yellow-400" />;
-      case 'todo':
+      case 'canceled':
+        return <Ban size={14} className="text-neutral-500" />;
       case 'backlog':
+        return <EyeOff size={14} className="text-neutral-400" />;
+      case 'todo':
+        return <Eye size={14} className="text-neutral-400" />;
       default:
         return <Clock size={14} className="text-neutral-400" />;
     }

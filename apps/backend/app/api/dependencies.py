@@ -1,5 +1,6 @@
 from fastapi import Cookie, HTTPException, Response
-from app.utils.token_manager import verify_token
+from app.utils.token_manager import verify_token, verify_refresh_token
+from app.utils.logger import logger
 
 
 async def get_current_user(auth_token: str = Cookie(None)):
@@ -17,7 +18,7 @@ async def get_current_user_from_refresh_token(refresh_token: str = Cookie(None))
     if not refresh_token:
         raise HTTPException(status_code=401, detail={
                             "message": "Missing refresh token"})
-    payload = verify_token(refresh_token)
+    payload = verify_refresh_token(refresh_token)
     if not payload:
         raise HTTPException(status_code=401, detail={
                             "message": "Invalid or expired refresh token"})
@@ -29,10 +30,10 @@ async def clear_auth_cookie(response: Response):
     response.delete_cookie("refresh_token", path="/")
 
 
-async def set_auth_cookie(response: Response, token: str):
+async def set_auth_cookie(response: Response, token_auth: str, token_refresh: str):
     response.set_cookie(
         key="auth_token",
-        value=token,
+        value=token_auth,
         httponly=True,
         secure=False,
         max_age=24 * 60 * 60,  # 1 day
@@ -41,7 +42,7 @@ async def set_auth_cookie(response: Response, token: str):
     )
     response.set_cookie(
         key="refresh_token",
-        value=token,
+        value=token_refresh,
         httponly=True,
         secure=False,
         max_age=7 * 24 * 60 * 60,  # 7 days
