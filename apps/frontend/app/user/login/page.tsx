@@ -165,7 +165,7 @@ export default function Login() {
                 </svg>
             </div>
 
-            <div className="w-full max-w-md p-8 rounded-2xl shadow-2xl bg-neutral-900 border border-neutral-800 relative z-10">
+            <div className="w-full max-w-md p-8 rounded-2xl shadow-2xl bg-neutral-900 border border-neutral-800 relative z-10 m-2">
                 {/* Header */}
                 <div className="flex flex-col items-center mb-8">
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-lg mb-4">
