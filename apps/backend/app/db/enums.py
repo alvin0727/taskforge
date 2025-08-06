@@ -15,6 +15,7 @@ class TaskPriority(str, Enum):
     MEDIUM = "medium"
     HIGH = "high"
     URGENT = "urgent"
+    NO_PRIORITY = None
 
 
 class ProjectStatus(str, Enum):

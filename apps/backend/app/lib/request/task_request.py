@@ -1,12 +1,12 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 from app.models.task import TaskPriority
 
 class TaskCreateRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
-    priority: TaskPriority = TaskPriority.LOW
+    priority: TaskPriority = TaskPriority.NO_PRIORITY
     project_id: str
     board_id: str
     column_id: str
@@ -22,3 +22,7 @@ class TaskUpdatePositionRequest(BaseModel):
 class TaskUpdateStatusRequest(BaseModel):
     task_id: str
     new_column_id: str
+
+class TaskUpdateRequest(BaseModel):
+    task_id: str
+    updates: Dict[str, Any]

@@ -198,15 +198,15 @@ function TaskCard({ task, isDragging = false, onPriorityChange, onAssigneeChange
   const getPriorityIcon = (priority: string) => {
     switch (priority.toLowerCase()) {
       case 'urgent':
-        return <Signal size={12} className="text-[#e11d48]" />;
+        return <Signal size={14} className="text-[#e11d48]" />;
       case 'high':
-        return <SignalHigh size={12} className="text-[#dc2626]" />;
+        return <SignalHigh size={14} className="text-[#dc2626]" />;
       case 'medium':
-        return <SignalMedium size={12} className="text-[#f59e42]" />;
+        return <SignalMedium size={14} className="text-[#f59e42]" />;
       case 'low':
-        return <SignalLow size={12} className="text-[#22c55e]" />;
+        return <SignalLow size={14} className="text-[#22c55e]" />;
       default:
-        return <Minus size={12} className="text-gray-500" />;
+        return <Minus size={14} className="text-gray-500" />;
     }
   };
 

@@ -22,40 +22,42 @@ class TaskService:
         """Create a new task"""
         try:
             project_id = ObjectId(task_data.project_id)
-            
+
             # Verify user has access to project
             await verify_user_access_to_project(user_id, project_id)
-            
+
             # Get the board and validate column_id if provided
             board = None
             if task_data.board_id:
                 board_id = ObjectId(task_data.board_id)
                 board = await db["boards"].find_one({"_id": board_id, "project_id": project_id})
                 if not board:
-                    raise HTTPException(status_code=404, detail="Board not found")
-                
+                    raise HTTPException(
+                        status_code=404, detail="Board not found")
+
                 # Validate column_id exists in board
                 if task_data.column_id:
                     column_ids = [col["id"] for col in board["columns"]]
                     if task_data.column_id not in column_ids:
                         raise HTTPException(
-                            status_code=400, 
+                            status_code=400,
                             detail="Invalid column_id for this board"
                         )
                 else:
                     # Default to first column if no column_id specified
                     task_data.column_id = board["columns"][0]["id"] if board["columns"] else "todo"
-            
+
             # Get next position for the task in the specified column
             position = await TaskService._get_next_position(
-                project_id, 
-                task_data.board_id, 
+                project_id,
+                task_data.board_id,
                 task_data.column_id or "todo"
             )
-            
+
             # Map column_id to status if needed
-            status = TaskService._map_column_to_status(task_data.column_id or "todo")
-            
+            status = TaskService._map_column_to_status(
+                task_data.column_id or "todo")
+
             # Prepare task document
             task_doc = {
                 "title": task_data.title,
@@ -83,11 +85,11 @@ class TaskService:
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
             }
-            
+
             # Insert task
             result = await db["tasks"].insert_one(task_doc)
             task_doc["_id"] = result.inserted_id
-            
+
             # Log activity
             await TaskService._log_activity(
                 user_id=user_id,
@@ -95,9 +97,9 @@ class TaskService:
                 activity_type=ActivityType.TASK_CREATED,
                 description=f"Created task '{task_data.title}'"
             )
-            
+
             return TaskService._format_task_response(task_doc)
-            
+
         except HTTPException:
             raise
         except Exception as e:
@@ -120,20 +122,20 @@ class TaskService:
             task = await db["tasks"].find_one({"_id": task_id})
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
-            
+
             # Verify user has access to project
             await verify_user_access_to_project(user_id, task["project_id"])
-            
+
             # Use existing column_id if not provided
             target_column_id = column_id or task.get("column_id", "todo")
-            
+
             # If column_id is different, this is a status change, not just position update
             if target_column_id != task.get("column_id"):
                 raise HTTPException(
                     status_code=400,
                     detail="Use change_task_status for moving between columns"
                 )
-            
+
             # Get all tasks in the column ordered by position
             query = {
                 "project_id": task["project_id"],
@@ -141,10 +143,11 @@ class TaskService:
                 "archived": False
             }
             tasks_in_column = await db["tasks"].find(query).sort("position", 1).to_list(length=None)
-            
+
             # Remove the task being moved
-            tasks_in_column = [t for t in tasks_in_column if t["_id"] != task_id]
-            
+            tasks_in_column = [
+                t for t in tasks_in_column if t["_id"] != task_id]
+
             # Insert the task at the new position index
             # Find the index where new_position should be
             # If new_position is an index (int), use it directly
@@ -155,7 +158,7 @@ class TaskService:
             if insert_index > len(tasks_in_column):
                 insert_index = len(tasks_in_column)
             tasks_in_column.insert(insert_index, task)
-            
+
             # Reassign positions (0, 1, 2, ...)
             bulk_ops = []
             for idx, t in enumerate(tasks_in_column):
@@ -168,7 +171,7 @@ class TaskService:
                         }
                     )
                 )
-                
+
             # Fix: use pymongo UpdateOne objects for bulk_write
             bulk_requests = [
                 UpdateOne(op[1]["filter"], op[1]["update"])
@@ -176,10 +179,10 @@ class TaskService:
             ]
             if bulk_requests:
                 await db["tasks"].bulk_write(bulk_requests)
-            
+
             # Get updated task
             updated_task = await db["tasks"].find_one({"_id": task_id})
-            
+
             # Log activity
             await TaskService._log_activity(
                 user_id=user_id,
@@ -187,9 +190,9 @@ class TaskService:
                 activity_type=ActivityType.TASK_UPDATED,
                 description=f"Updated position of task '{task['title']}'"
             )
-            
+
             return TaskService._format_task_response(updated_task)
-            
+
         except HTTPException:
             raise
         except Exception as e:
@@ -211,10 +214,10 @@ class TaskService:
             task = await db["tasks"].find_one({"_id": task_id})
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
-            
+
             # Verify user has access to project
             await verify_user_access_to_project(user_id, task["project_id"])
-            
+
             # Validate board and column if board_id exists
             if task.get("board_id"):
                 board = await db["boards"].find_one({"_id": task["board_id"]})
@@ -225,7 +228,7 @@ class TaskService:
                             status_code=400,
                             detail="Invalid column_id for this board"
                         )
-            
+
             # Get all tasks in target column ordered by position
             target_query = {
                 "project_id": task["project_id"],
@@ -235,12 +238,12 @@ class TaskService:
             target_tasks = await db["tasks"].find(target_query).sort("position", 1).to_list(length=None)
             # New position is always last
             new_position_val = len(target_tasks)
-            
+
             # Map column to status
             new_status = TaskService._map_column_to_status(new_column_id)
             old_column_id = task.get("column_id")
             old_status = task.get("status")
-            
+
             # Prepare update data for moved task
             update_data = {
                 "column_id": new_column_id,
@@ -253,13 +256,13 @@ class TaskService:
                 update_data["completed_at"] = datetime.utcnow()
             elif old_status in [TaskStatus.DONE, TaskStatus.CANCELED] and new_status not in [TaskStatus.DONE, TaskStatus.CANCELED]:
                 update_data["completed_at"] = None
-            
+
             # Update the moved task
             await db["tasks"].update_one(
                 {"_id": task_id},
                 {"$set": update_data}
             )
-            
+
             # Reindex positions in source column (exclude moved task)
             source_query = {
                 "project_id": task["project_id"],
@@ -271,14 +274,15 @@ class TaskService:
             bulk_requests = []
             for idx, t in enumerate(source_tasks):
                 bulk_requests.append(
-                    UpdateOne({"_id": t["_id"]}, {"$set": {"position": idx, "updated_at": datetime.utcnow()}})
+                    UpdateOne({"_id": t["_id"]}, {
+                              "$set": {"position": idx, "updated_at": datetime.utcnow()}})
                 )
             if bulk_requests:
                 await db["tasks"].bulk_write(bulk_requests)
-            
+
             # Get updated task
             updated_task = await db["tasks"].find_one({"_id": task_id})
-            
+
             # Log activity
             await TaskService._log_activity(
                 user_id=user_id,
@@ -286,9 +290,9 @@ class TaskService:
                 activity_type=ActivityType.TASK_UPDATED,
                 description=f"Moved task '{task['title']}' from {old_column_id} to {new_column_id}"
             )
-            
+
             return TaskService._format_task_response(updated_task)
-            
+
         except HTTPException:
             raise
         except Exception as e:
@@ -296,6 +300,62 @@ class TaskService:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to change task status: {str(e)}"
+            )
+
+    @staticmethod
+    async def update_task_partial(
+        user_id: ObjectId,
+        task_id: ObjectId,
+        update_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Update partial attributes of a task.
+        Only fields present in update_data will be updated.
+        """
+        try:
+            # Find the task
+            task = await db["tasks"].find_one({"_id": task_id})
+            if not task:
+                raise HTTPException(status_code=404, detail="Task not found")
+
+            # Verify user has access to project
+            await verify_user_access_to_project(user_id, task["project_id"])
+
+            # Remove fields that should not be updated directly
+            protected_fields = ["_id", "project_id",
+                                "creator_id", "created_at"]
+            for field in protected_fields:
+                update_data.pop(field, None)
+
+            # Always update updated_at
+            update_data["updated_at"] = datetime.utcnow()
+
+            # Update the task
+            await db["tasks"].update_one(
+                {"_id": task_id},
+                {"$set": update_data}
+            )
+
+            # Get updated task
+            updated_task = await db["tasks"].find_one({"_id": task_id})
+
+            # Log activity
+            await TaskService._log_activity(
+                user_id=user_id,
+                project_id=task["project_id"],
+                activity_type=ActivityType.TASK_UPDATED,
+                description=f"Updated task '{task['title']}' (partial)"
+            )
+
+            return TaskService._format_task_response(updated_task)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to update task (partial): {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to update task: {str(e)}"
             )
 
     @staticmethod
@@ -392,7 +452,7 @@ class TaskService:
         Generate dummy tasks for a board and insert them into the database.
         """
         from app.services.llm_generator import generate_dummy_tasks
-        
+
         dummy_tasks = generate_dummy_tasks(project_id, board_id, num_tasks)
         # Set creator_id if provided
         if creator_id:

@@ -4,7 +4,7 @@ from typing import Optional
 from app.utils.logger import logger
 from app.services.task_service import TaskService
 from app.models.task import TaskCreate
-from app.lib.request.task_request import TaskCreateRequest, TaskUpdatePositionRequest, TaskUpdateStatusRequest
+from app.lib.request.task_request import TaskCreateRequest, TaskUpdatePositionRequest, TaskUpdateRequest, TaskUpdateStatusRequest
 from app.db.enums import UserRole
 from app.utils.permissions import verify_user_access_to_project
 from app.api.dependencies import get_current_user
@@ -92,6 +92,34 @@ async def change_task_status(
         raise
     except Exception as e:
         logger.error(f"Error changing task status: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.put("/update-task-partial")
+async def update_task_partial(
+    task_data: TaskUpdateRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Update task partially.
+    All project members can update tasks.
+    """
+    try:
+        user_id = ObjectId(current_user["id"])
+        task_object_id = ObjectId(task_data.task_id)
+
+        result = await TaskService.update_task_partial(
+            user_id, 
+            task_object_id, 
+            task_data.updates
+        )
+        return {
+            "message": "Task updated successfully",
+            "task": result
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating task: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 

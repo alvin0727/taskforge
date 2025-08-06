@@ -36,7 +36,7 @@ class Task(BaseDocument):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     status: TaskStatus = TaskStatus.TODO
-    priority: TaskPriority = TaskPriority.LOW
+    priority: TaskPriority = TaskPriority.NO_PRIORITY
     project_id: PyObjectId
     board_id: Optional[PyObjectId] = None
     column_id: Optional[str] = None
@@ -62,7 +62,7 @@ class Task(BaseDocument):
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
-    priority: TaskPriority = TaskPriority.LOW
+    priority: TaskPriority = TaskPriority.NO_PRIORITY
     project_id: str
     board_id: Optional[str] = None
     column_id: Optional[str] = None
