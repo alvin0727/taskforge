@@ -31,6 +31,15 @@ class UserPreferences(BaseModel):
     notification_types: List[NotificationType] = []
 
 
+class UserProject(BaseModel):
+    """User's membership in a project"""
+    project_id: PyObjectId
+    role: UserRole = UserRole.MANAGER  # default manager for creator
+    status: str = "active"  # active, invited, suspended
+    joined_at: datetime = Field(default_factory=datetime.utcnow)
+    invited_by: Optional[PyObjectId] = None
+
+
 class User(BaseDocument):
     name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr = Field(..., unique=True)
@@ -48,7 +57,7 @@ class User(BaseDocument):
     last_login: Optional[datetime] = None
 
     # Legacy fields (for backward compatibility)
-    joined_projects: List[PyObjectId] = []
+    joined_projects: List[UserProject] = []
     starred_items: List[PyObjectId] = []
 
 

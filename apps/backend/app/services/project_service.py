@@ -181,6 +181,18 @@ class ProjectService:
             result = await db["projects"].insert_one(project_doc)
             project_id = result.inserted_id
 
+            # Owner: add project to joined_projects as manager
+            await db["users"].update_one(
+                {"_id": user_id},
+                {"$addToSet": {"joined_projects": {
+                    "project_id": project_id,
+                    "role": UserRole.MANAGER,
+                    "status": "active",
+                    "joined_at": datetime.utcnow(),
+                    "invited_by": None
+                }}}
+            )
+
             # Create default board
             board_id = await ProjectService.create_default_board(project_id, project_data["name"])
 
@@ -438,13 +450,13 @@ class ProjectService:
             )
 
     @staticmethod
-    async def add_project_member(
+    async def add_project_members(
         user_id: ObjectId,
         organization_id: ObjectId,
         project_slug: str,
-        member_id: ObjectId
-    ) -> bool:
-        """Add member to project"""
+        member_ids: List[ObjectId]
+    ) -> Dict:
+        """Add multiple members to project"""
         try:
             # Verify user access
             access = await ProjectService.verify_user_access(user_id, organization_id)
@@ -467,50 +479,154 @@ class ProjectService:
                     detail="Insufficient permissions to add members"
                 )
 
-            # Verify member is in organization
-            member = await db["users"].find_one({"_id": member_id})
-            if not member:
-                raise HTTPException(status_code=404, detail="User not found")
+            added_members = []
+            failed_members = []
 
-            member_orgs = member.get("organizations", [])
-            is_org_member = any(
-                org["organization_id"] == organization_id
-                and org.get("status") == "active"
-                for org in member_orgs
-            )
+            # Process each member
+            for member_id in member_ids:
+                try:
+                    # Verify member exists and is in organization
+                    member = await db["users"].find_one({"_id": member_id})
+                    if not member:
+                        failed_members.append({
+                            "member_id": str(member_id),
+                            "reason": "User not found"
+                        })
+                        continue
 
-            if not is_org_member:
-                raise HTTPException(
-                    status_code=400,
-                    detail="User is not a member of the organization"
-                )
+                    member_orgs = member.get("organizations", [])
+                    is_org_member = any(
+                        org["organization_id"] == organization_id
+                        and org.get("status") == "active"
+                        for org in member_orgs
+                    )
 
-            # Add to project members if not already added
-            result = await db["projects"].update_one(
-                {"_id": project["_id"]},
-                {"$addToSet": {"members": member_id}}
-            )
+                    if not is_org_member:
+                        failed_members.append({
+                            "member_id": str(member_id),
+                            "reason": "User is not a member of the organization"
+                        })
+                        continue
 
-            if result.modified_count > 0:
-                # Log activity
-                await ProjectService._log_activity(
-                    user_id=user_id,
-                    project_id=project["_id"],
-                    activity_type=ActivityType.USER_JOINED,
-                    target_user_id=member_id,
-                    description=f"Added {member['name']} to project"
-                )
+                    # Check if already a project member
+                    if member_id in project.get("members", []):
+                        failed_members.append({
+                            "member_id": str(member_id),
+                            "reason": "User is already a project member"
+                        })
+                        continue
 
-            return True
+                    # Add to project members
+                    result = await db["projects"].update_one(
+                        {"_id": project["_id"]},
+                        {"$addToSet": {"members": member_id}}
+                    )
+
+                    # Add joined_projects entry
+                    joined_project_info = {
+                        "project_id": project["_id"],
+                        "role": UserRole.MEMBER,
+                        "status": "active",
+                        "joined_at": datetime.utcnow(),
+                        "invited_by": user_id
+                    }
+
+                    await db["users"].update_one(
+                        {"_id": member_id},
+                        {"$addToSet": {"joined_projects": joined_project_info}}
+                    )
+
+                    # Log activity
+                    await ProjectService._log_activity(
+                        user_id=user_id,
+                        project_id=project["_id"],
+                        activity_type=ActivityType.USER_JOINED,
+                        target_user_id=member_id,
+                        description=f"Added {member['name']} to project"
+                    )
+
+                    # Build member response
+                    member_response = {
+                        "id": str(member["_id"]),
+                        "name": member.get("name"),
+                        "email": member.get("email"),
+                        "avatar": member.get("avatar_url") if member.get("avatar_url") else ProjectService.get_initials(member.get("name", "")),
+                        "role": joined_project_info.get("role"),
+                        "status": joined_project_info.get("status"),
+                        "joined_at": joined_project_info.get("joined_at"),
+                    }
+
+                    added_members.append(member_response)
+
+                except Exception as e:
+                    failed_members.append({
+                        "member_id": str(member_id),
+                        "reason": str(e)
+                    })
+
+            return {
+                "added": added_members,
+                "failed": failed_members,
+                "summary": {
+                    "total_processed": len(member_ids),
+                    "successfully_added": len(added_members),
+                    "failed_to_add": len(failed_members)
+                }
+            }
 
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Failed to add project member: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to add project member: {str(e)}"
+                status_code=500, detail=f"Failed to add members: {str(e)}")
+
+    @staticmethod
+    def get_initials(name: str) -> str:
+        if not name:
+            return ""
+        parts = name.strip().split()
+        initials = "".join([p[0].upper() for p in parts if p])
+        return initials[:2]
+
+    @staticmethod
+    async def get_project_members_by_slug(
+        user_id: ObjectId,
+        organization_id: ObjectId,
+        project_slug: str
+    ) -> List[Dict[str, Any]]:
+        """Get project members by project slug, include role, status, joined_at"""
+        # Verify user access
+        await ProjectService.verify_user_access(user_id, organization_id)
+
+        project = await db["projects"].find_one({
+            "slug": project_slug,
+            "organization_id": organization_id,
+            "archived": False
+        })
+
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        member_ids = project.get("members", [])
+        members = await db["users"].find({"_id": {"$in": member_ids}}).to_list(length=None)
+
+        result = []
+        for m in members:
+            # Cari info project user
+            user_proj_info = next(
+                (proj for proj in m.get("joined_projects", [])
+                 if proj.get("project_id") == project["_id"]),
+                {}
             )
+            result.append({
+                "id": str(m["_id"]),
+                "name": m.get("name"),
+                "email": m.get("email"),
+                "avatar": m.get("avatar_url") if m.get("avatar_url") else ProjectService.get_initials(m.get("name", "")),
+                "role": user_proj_info.get("role"),
+                "status": user_proj_info.get("status"),
+                "joined_at": user_proj_info.get("joined_at"),
+            })
+        return result
 
     @staticmethod
     async def _get_project_stats(project_id: ObjectId) -> Dict[str, Any]:

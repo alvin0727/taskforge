@@ -18,3 +18,14 @@ export interface Organization {
   members_count: number;
   is_owner: boolean;
 }
+
+
+export interface OrganizationMember {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role?: string;
+  status?: string;
+  joined_at?: string;
+}

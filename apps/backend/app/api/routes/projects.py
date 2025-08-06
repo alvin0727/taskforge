@@ -50,6 +50,48 @@ async def create_project(
         "project": project
     }
 
+@router.post("/add-project-members")
+async def add_project_members(
+    request: project_request.AddMemberRequest,
+    current_user=Depends(get_current_user),
+):
+    """Add multiple members to a project"""
+    user_id = ObjectId(current_user["id"])
+    organization_id = ObjectId(request.organization_id)
+    project_slug = request.project_slug
+    member_ids = [ObjectId(member_id) for member_id in request.member_ids]
+
+    # Verify user access and add members
+    result = await project_service.add_project_members(
+        user_id=user_id,
+        organization_id=organization_id,
+        project_slug=project_slug,
+        member_ids=member_ids
+    )
+
+    return {
+        "message": f"Successfully processed {len(member_ids)} member(s)",
+        "data": result
+    }
+
+@router.get("/{organization_id}/member-projects/{project_slug}")
+async def get_member_projects(
+    organization_id: str,
+    project_slug: str,
+    current_user=Depends(get_current_user),
+):
+    """Get all member projects for a specific organization"""
+    
+    user_id = ObjectId(current_user["id"])
+    org_id = ObjectId(organization_id)
+    members = await project_service.get_project_members_by_slug(user_id, org_id, project_slug)
+    total = len(members)
+
+    return {
+        "members": members,
+        "total": total,
+    }
+
 
 @router.get("/{org_id}/sidebar-projects")
 async def get_sidebar_projects(

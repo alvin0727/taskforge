@@ -534,7 +534,9 @@ export default function BoardPage() {
               cursor: isScrolling ? 'grabbing' : 'grab',
               scrollbarWidth: 'thin',
               scrollbarColor: '#404040 #171717',
-              overscrollBehaviorX: 'none',
+              overscrollBehaviorX: 'contain', // Changed from 'none' to 'contain'
+              scrollBehavior: 'auto', // Add explicit scroll behavior
+              willChange: 'scroll-position', // Optimize for scroll performance
             }}
           >
             {board?.columns

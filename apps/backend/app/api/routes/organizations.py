@@ -32,7 +32,7 @@ async def create_team_organization(
     await OrganizationService.add_user_to_organization(
         user_id=user_id,
         organization_id=organization_id,
-        role=UserRole.ADMIN
+        role=UserRole.MANAGER
     )
 
     org = await db["organizations"].find_one({"_id": organization_id})
@@ -80,6 +80,7 @@ async def get_organization_details(
     current_user: dict = Depends(get_current_user)
 ):
     """Get organization details"""
+
     # Verify user has access to this organization
     user_id = ObjectId(current_user["id"])
     organization_id = ObjectId(org_id)
@@ -133,6 +134,7 @@ async def invite_member(
     # Check permissions
     user_id = ObjectId(current_user["id"])
     organization_id = ObjectId(org_id)
+
     user, org = await verify_user_access_to_organization(
         current_user=user_id,
         org_id=organization_id,
@@ -190,3 +192,28 @@ async def accept_invitation(
     return {
         "message": result["message"]
     }
+
+
+@router.get("/{org_slug}/members")
+async def get_organization_members(
+    org_slug: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get members of an organization by slug"""
+    user_id = ObjectId(current_user["id"])
+
+    # Verify user has access to this organization
+    org = await db["organizations"].find_one({"slug": org_slug})
+    if not org:
+        raise HTTPException(status_code=404, detail={
+                            "message": "Organization not found"})
+
+    await verify_user_access_to_organization(
+            current_user=user_id,
+            org_id=ObjectId(org["_id"]),
+            action="view"
+        )
+
+    members = await OrganizationService.get_organization_members_by_slug(org["slug"])
+
+    return { "members": members }

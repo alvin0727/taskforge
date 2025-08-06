@@ -42,11 +42,11 @@ import ProjectForm from "@/components/ui/project/ProjectForm";
 import Footer from "./Footer";
 
 const navLinks = [
-  { name: "Dashboard", href: "/protected/dashboard", icon: Home, iconColor: "text-blue-400" },
+  { name: "Dashboard", href: "/", icon: Home, iconColor: "text-blue-400" },
   { name: "Board", href: "/protected/board", icon: Kanban, iconColor: "text-purple-400" },
   { name: "Tasks", href: "/protected/task", icon: CheckSquare, iconColor: "text-green-400" },
   { name: "Workflows", href: "/protected/workflow", icon: GitBranch, iconColor: "text-orange-400" },
-  { name: "Team", href: "/protected/team", icon: Users, iconColor: "text-pink-400" },
+  { name: "Team", href: "/team", icon: Users, iconColor: "text-pink-400" },
   { name: "Calendar", href: "/protected/calendar", icon: Calendar, iconColor: "text-red-400" },
   { name: "Analytics", href: "/protected/analytics", icon: BarChart3, iconColor: "text-cyan-400" },
 ];
@@ -81,6 +81,7 @@ export default function Sidebar() {
   const setActiveOrg = useOrganizationStore((state) => state.setActiveOrg);
   const recentProjects = useProjectStore((state) => state.projects);
   const setProjects = useProjectStore((state) => state.setProjects);
+  const setMembers = useOrganizationStore((state) => state.setMembers);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectFormLoading, setProjectFormLoading] = useState(false);
 
@@ -106,6 +107,10 @@ export default function Sidebar() {
           // Fetch recent projects after activeOrg has been set
           const response = await projectService.getSideBarProject(activeOrg.id);
           setProjects(response.projects || []);
+
+          // Fetch organization members
+          const memberRes = await organizationService.getOrganizationMembers(activeOrg.slug);
+          setMembers(memberRes.members || []);
         }
       } catch (err) {
         console.error("Failed to fetch organizations or recent projects", err);

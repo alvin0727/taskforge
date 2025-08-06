@@ -346,3 +346,44 @@ class OrganizationService:
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Failed to get user organizations: {str(e)}")
+
+    @staticmethod
+    def get_initials(name: str) -> str:
+        if not name:
+            return ""
+        parts = name.strip().split()
+        initials = "".join([p[0].upper() for p in parts if p])
+        return initials[:2]
+    
+    @staticmethod
+    async def get_organization_members_by_slug(org_slug: str) -> List[Dict[str, Any]]:
+        """Get all members of an organization by slug, including role, status, joined_at"""
+        try:
+            organization = await db["organizations"].find_one({"slug": org_slug})
+            if not organization:
+                raise HTTPException(status_code=404, detail="Organization not found")
+
+            org_id = organization["_id"]
+            member_ids = organization.get("members", [])
+            members = await db["users"].find({"_id": {"$in": member_ids}}).to_list(length=None)
+            result = []
+            for m in members:
+                # Cari info organisasi user
+                user_org_info = next(
+                    (org for org in m.get("organizations", []) if org.get("organization_id") == org_id),
+                    {}
+                )
+                result.append({
+                    "id": str(m["_id"]),
+                    "name": m.get("name"),
+                    "email": m.get("email"),
+                    "avatar": m.get("avatar_url") if m.get("avatar_url") else OrganizationService.get_initials(m.get("name", "")),
+                    "role": user_org_info.get("role"),
+                    "status": user_org_info.get("status"),
+                    "joined_at": user_org_info.get("joined_at"),
+                })
+            return result
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get organization members: {str(e)}"
+            )

@@ -1,5 +1,10 @@
 import projectAdapter from "@/adapters/api/projectAdapter";
-import { SidebarProject, RequestCreateProject } from "@/lib/types/project";
+import {
+    SidebarProject,
+    RequestCreateProject,
+    ProjectMember,
+    AddProjectMemberResponse
+} from "@/lib/types/project";
 
 export async function getSideBarProject(orgId: string): Promise<{ projects: SidebarProject[], total: number }> {
     return await projectAdapter.getSideBarProject(orgId);
@@ -9,7 +14,22 @@ export async function createNewProject(project: RequestCreateProject): Promise<{
     return await projectAdapter.createNewProject(project);
 }
 
+export async function getProjectMembers(orgId: string, slug: string): Promise<{ members: ProjectMember[] }> {
+    return await projectAdapter.getProjectMembers(orgId, slug);
+}
+
+export async function addMembersToProject(
+    organizationId: string,
+    projectSlug: string,
+    memberIds: string[]
+): Promise<AddProjectMemberResponse['data']> {
+    const response = await projectAdapter.addMembersToProject(organizationId, projectSlug, memberIds);
+    return response.data;
+}
+
 export default {
     getSideBarProject,
     createNewProject,
+    getProjectMembers,
+    addMembersToProject,
 };
