@@ -90,12 +90,18 @@ class TaskService:
             result = await db["tasks"].insert_one(task_doc)
             task_doc["_id"] = result.inserted_id
 
-            # Log activity
+            # Log activity for task creation
             await TaskService._log_activity(
                 user_id=user_id,
                 project_id=project_id,
                 activity_type=ActivityType.TASK_CREATED,
-                description=f"Created task '{task_data.title}'"
+                description=f"Created task '{task_data.title}'",
+                metadata={
+                    "task_id": str(task_doc["_id"]),
+                    "title": task_data.title,
+                    "column_id": task_data.column_id,
+                    "board_id": str(task_data.board_id) if task_data.board_id else None
+                }
             )
 
             return TaskService._format_task_response(task_doc)

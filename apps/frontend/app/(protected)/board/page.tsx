@@ -85,6 +85,7 @@ function DroppableColumn({
   );
 }
 
+// Update the TaskCard usage in your board page
 function SortableTaskCard({ task }: { task: Task }) {
   const {
     attributes,
@@ -110,6 +111,7 @@ function SortableTaskCard({ task }: { task: Task }) {
       data-task-card
       className="mb-3"
     >
+      {/* Updated TaskCard without callbacks */}
       <TaskCard task={task} isDragging={isDragging} />
     </div>
   );
