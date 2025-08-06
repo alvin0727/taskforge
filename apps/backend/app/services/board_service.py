@@ -390,6 +390,7 @@ class BoardService:
                     "priority": task["priority"],
                     "assignee_id": str(task["assignee_id"]) if task.get("assignee_id") else None,
                     "due_date": task.get("due_date"),
+                    "estimated_hours": task.get("estimated_hours", 0),
                     "labels": task.get("labels", []),
                     "position": task.get("position", 0.0),
                     "created_at": task["created_at"],

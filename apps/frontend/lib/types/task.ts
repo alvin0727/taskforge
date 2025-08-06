@@ -13,6 +13,7 @@ export interface Task {
   priority: TaskPriority;
   assignee_id: string | null;
   due_date: string | null;
+  estimated_hours: number | null;
   labels: any[];
   position: number;
   created_at: string;
