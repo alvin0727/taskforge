@@ -4,6 +4,7 @@ import { Plus, Calendar, User, Clock, Tag, X, ChevronDown, Signal, SignalHigh, S
 import { useSidebarStore } from "@/stores/sidebarStore";
 import LoadingButton from "@/components/ui/loading/LoadingButton";
 import DatePicker from "react-datepicker";
+import { useTeamMembers, getAssigneeAvatar } from '../team/TeamUtils';
 import "react-datepicker/dist/react-datepicker.css";
 
 interface TaskFormProps {
@@ -40,13 +41,14 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
   const [showEstimatedHoursInput, setShowEstimatedHoursInput] = useState(false);
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const teamMembers = useTeamMembers();
 
   const priorityRef = useRef<HTMLDivElement>(null);
   const dueDateRef = useRef<HTMLDivElement>(null);
   const assigneeRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
   const estimatedHoursRef = useRef<HTMLDivElement>(null);
-  
+
   // Available labels with colors
   const availableLabels = [
     { name: "Bug", color: "bg-red-500/20 text-red-400 border-red-500/30" },
@@ -55,16 +57,6 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
     { name: "KnowledgeBase", color: "bg-green-500/20 text-green-400 border-green-500/30" },
     { name: "Documentation", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
     { name: "Testing", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
-  ];
-
-  // Mock team members (you can replace with actual data)
-  const teamMembers = [
-    { id: "1", name: "alvin.gea", avatar: "🧑‍💻" },
-    { id: "2", name: "aufa", avatar: "👨‍💻" },
-    { id: "3", name: "drpaulang", avatar: "👩‍💻" },
-    { id: "4", name: "eunike", avatar: "👩‍🎨" },
-    { id: "5", name: "fidaa", avatar: "👨‍🎨" },
-    { id: "6", name: "jennifer.florentina", avatar: "👩‍💼" },
   ];
 
   // Due date presets
@@ -85,7 +77,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
 
   // Sidebar state for responsive margin
   const sidebarHidden = useSidebarStore((state) => state.hidden);
-  
+
   // Helper to get sidebar margin (responsive, SSR safe)
   const [sidebarMargin, setSidebarMargin] = useState('0');
   const [topMargin, setTopMargin] = useState('0');
@@ -171,8 +163,8 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
   };
 
   const toggleLabel = (labelName: string) => {
-    setSelectedLabels(prev => 
-      prev.includes(labelName) 
+    setSelectedLabels(prev =>
+      prev.includes(labelName)
         ? prev.filter(l => l !== labelName)
         : [...prev, labelName]
     );
@@ -193,7 +185,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
 
   const getPriorityIcon = (priority?: TaskPriority) => {
     if (!priority) return <Minus size={14} className="text-gray-500" />;
-    
+
     switch (priority) {
       case TaskPriority.URGENT:
         return <Signal size={14} className="text-red-400" />;
@@ -210,7 +202,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
 
   const getPriorityLabel = (priority?: TaskPriority) => {
     if (!priority) return "No Priority";
-    
+
     switch (priority) {
       case TaskPriority.URGENT:
         return "Urgent";
@@ -252,7 +244,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
     const date = new Date(dateString);
     const today = new Date();
     const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    
+
     if (date.toDateString() === today.toDateString()) {
       return "Today";
     } else if (date.toDateString() === tomorrow.toDateString()) {
@@ -291,10 +283,9 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
 
   return (
     <>
-      <div 
-        className={`fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-4 pt-20 transition-all duration-300 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+      <div
+        className={`fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-4 pt-20 transition-all duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'
+          }`}
         style={{
           marginLeft: sidebarMargin,
           marginTop: topMargin,
@@ -304,9 +295,8 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
           if (e.target === e.currentTarget) handleClose();
         }}
       >
-        <div className={`bg-neutral-900/95 backdrop-blur-xl border border-neutral-700/30 rounded-xl shadow-2xl w-full max-w-md mx-auto transform transition-all duration-300 ease-out ${
-          isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
-        }`}>
+        <div className={`bg-neutral-900/95 backdrop-blur-xl border border-neutral-700/30 rounded-xl shadow-2xl w-full max-w-md mx-auto transform transition-all duration-300 ease-out ${isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+          }`}>
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-neutral-800/30">
             <div className="flex items-center gap-2">
@@ -359,17 +349,16 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                 <button
                   type="button"
                   onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${
-                    isMobile && !shouldShowPriorityText() ? "justify-center w-9 h-9 px-0 py-0" : ""
-                  }`}
+                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${isMobile && !shouldShowPriorityText() ? "justify-center w-9 h-9 px-0 py-0" : ""
+                    }`}
                   aria-label={isMobile && !shouldShowPriorityText() ? "Priority" : undefined}
                 >
-                  {getPriorityIcon(form.priority)}
+                  {getPriorityIcon(form.priority ?? undefined)}
                   {shouldShowPriorityText() && (
-                    <span className="text-xs">{getPriorityLabel(form.priority)}</span>
+                    <span className="text-xs">{getPriorityLabel(form.priority ?? undefined)}</span>
                   )}
                 </button>
-                
+
                 {showPriorityDropdown && (
                   <div className="absolute top-full left-0 mt-1 w-48 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-10">
                     <div className="p-1">
@@ -416,17 +405,16 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                 <button
                   type="button"
                   onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${
-                    isMobile && !shouldShowAssigneeText() ? "justify-center w-9 h-9 px-0 py-0" : ""
-                  }`}
+                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${isMobile && !shouldShowAssigneeText() ? "justify-center w-9 h-9 px-0 py-0" : ""
+                    }`}
                   aria-label={isMobile && !shouldShowAssigneeText() ? "Assignee" : undefined}
                 >
                   <User size={14} />
                   {shouldShowAssigneeText() && (
-                    <span className="text-xs">{getAssigneeName(form.assignee_id)}</span>
+                    <span className="text-xs">{getAssigneeName(form.assignee_id ?? "")}</span>
                   )}
                 </button>
-                
+
                 {showAssigneeDropdown && (
                   <div className="absolute top-full left-0 mt-1 w-56 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-10">
                     <div className="p-1">
@@ -444,7 +432,6 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                           </div>
                           <span>No assignee</span>
                         </div>
-                        <span className="text-xs text-neutral-500">0</span>
                       </button>
                       <div className="px-3 py-1 text-xs text-neutral-500">Team members</div>
                       {teamMembers.map((member) => (
@@ -455,7 +442,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                           className="w-full flex items-center px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700/50 rounded-md transition-colors"
                         >
                           <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-xs mr-2">
-                            {member.avatar}
+                            {getAssigneeAvatar(member.id, teamMembers)}
                           </div>
                           <span>{member.name}</span>
                         </button>
@@ -473,17 +460,16 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                     setShowDueDateDropdown(!showDueDateDropdown);
                     setShowCustomDatePicker(false);
                   }}
-                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${
-                    isMobile && !shouldShowDueDateText() ? "justify-center w-9 h-9 px-0 py-0" : ""
-                  }`}
+                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${isMobile && !shouldShowDueDateText() ? "justify-center w-9 h-9 px-0 py-0" : ""
+                    }`}
                   aria-label={isMobile && !shouldShowDueDateText() ? "Due Date" : undefined}
                 >
                   <Calendar size={14} />
                   {shouldShowDueDateText() && (
-                    <span className="text-xs">{formatDueDate(form.due_date)}</span>
+                    <span className="text-xs">{formatDueDate(form.due_date ?? "")}</span>
                   )}
                 </button>
-                
+
                 {/* Dropdown for desktop */}
                 {!isMobile && showDueDateDropdown && (
                   <div className="absolute top-full left-0 mt-1 w-56 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-10">
@@ -591,9 +577,8 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                 <button
                   type="button"
                   onClick={() => setShowEstimatedHoursInput(!showEstimatedHoursInput)}
-                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${
-                    isMobile && !shouldShowEstimatedHoursText() ? "justify-center w-9 h-9 px-0 py-0" : ""
-                  }`}
+                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${isMobile && !shouldShowEstimatedHoursText() ? "justify-center w-9 h-9 px-0 py-0" : ""
+                    }`}
                   aria-label={isMobile && !shouldShowEstimatedHoursText() ? "Estimated Hours" : undefined}
                 >
                   <Clock size={14} />
@@ -603,7 +588,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                     </span>
                   )}
                 </button>
-                
+
                 {showEstimatedHoursInput && (
                   <div className="absolute top-full left-0 mt-1 w-32 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-10">
                     <div className="p-2">
@@ -628,9 +613,8 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                 <button
                   type="button"
                   onClick={() => setShowLabelsDropdown(!showLabelsDropdown)}
-                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${
-                    isMobile && !shouldShowLabelsText() ? "justify-center w-9 h-9 px-0 py-0" : ""
-                  }`}
+                  className={`flex items-center gap-2 px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800/50 rounded-md transition-colors ${isMobile && !shouldShowLabelsText() ? "justify-center w-9 h-9 px-0 py-0" : ""
+                    }`}
                   aria-label={isMobile && !shouldShowLabelsText() ? "Labels" : undefined}
                 >
                   <Tag size={14} />
@@ -640,7 +624,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                     </span>
                   )}
                 </button>
-                
+
                 {showLabelsDropdown && (
                   <div className="absolute top-full left-0 mt-1 w-64 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-10">
                     <div className="p-2">
@@ -656,11 +640,10 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                             onClick={() => toggleLabel(label.name)}
                             className="w-full flex items-center px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700/50 rounded-md transition-colors"
                           >
-                            <div className={`w-3 h-3 rounded-full mr-2 ${
-                              label.name === 'Bug' ? 'bg-red-500' :
-                              label.name === 'Feature' ? 'bg-purple-500' :
-                              'bg-blue-500'
-                            }`}></div>
+                            <div className={`w-3 h-3 rounded-full mr-2 ${label.name === 'Bug' ? 'bg-red-500' :
+                                label.name === 'Feature' ? 'bg-purple-500' :
+                                  'bg-blue-500'
+                              }`}></div>
                             <span>{label.name}</span>
                             {selectedLabels.includes(label.name) && (
                               <span className="ml-auto text-xs text-green-400">✓</span>
@@ -677,11 +660,10 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                             onClick={() => toggleLabel(label.name)}
                             className="w-full flex items-center px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700/50 rounded-md transition-colors"
                           >
-                            <div className={`w-3 h-3 rounded-full mr-2 ${
-                              label.name === 'KnowledgeBase' ? 'bg-green-500' :
-                              label.name === 'Documentation' ? 'bg-yellow-500' :
-                              'bg-orange-500'
-                            }`}></div>
+                            <div className={`w-3 h-3 rounded-full mr-2 ${label.name === 'KnowledgeBase' ? 'bg-green-500' :
+                                label.name === 'Documentation' ? 'bg-yellow-500' :
+                                  'bg-orange-500'
+                              }`}></div>
                             <span>{label.name}</span>
                             {selectedLabels.includes(label.name) && (
                               <span className="ml-auto text-xs text-green-400">✓</span>
@@ -706,14 +688,13 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                       className={`px-2 py-1 text-xs rounded-full border ${label?.color || 'bg-neutral-800/30 text-neutral-400 border-neutral-700/30'}`}
                     >
                       <div className="flex items-center gap-1.5">
-                        <div className={`w-2 h-2 rounded-full ${
-                          labelName === 'Bug' ? 'bg-red-500' :
-                          labelName === 'Feature' ? 'bg-purple-500' :
-                          labelName === 'Improvement' ? 'bg-blue-500' :
-                          labelName === 'KnowledgeBase' ? 'bg-green-500' :
-                          labelName === 'Documentation' ? 'bg-yellow-500' :
-                          'bg-orange-500'
-                        }`}></div>
+                        <div className={`w-2 h-2 rounded-full ${labelName === 'Bug' ? 'bg-red-500' :
+                            labelName === 'Feature' ? 'bg-purple-500' :
+                              labelName === 'Improvement' ? 'bg-blue-500' :
+                                labelName === 'KnowledgeBase' ? 'bg-green-500' :
+                                  labelName === 'Documentation' ? 'bg-yellow-500' :
+                                    'bg-orange-500'
+                          }`}></div>
                         {labelName}
                       </div>
                     </span>
