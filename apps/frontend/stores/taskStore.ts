@@ -11,6 +11,7 @@ interface TaskStore {
   updateTaskStatus: (taskId: string, newStatus: string) => void;
   reorderTasks: (columnId: string, tasks: Task[]) => void;
   updateTaskPartial: (taskId: string, updates: Partial<Task>) => void;
+  removeTask: (taskId: string) => void;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -106,5 +107,37 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     });
 
     set({ tasks: updatedTasks, tasksByColumn: newTasksByColumn });
+  },
+
+  removeTask: (taskId) => {
+    const { tasks, tasksByColumn } = get();
+
+    // Find task to remove
+    const taskToRemove = tasks.find(task => task.id === taskId);
+    if (!taskToRemove) return;
+
+    const columnId = taskToRemove.status;
+
+    // Remove task from tasks array
+
+    const updatedTasks = tasks
+      .filter(task => task.id !== taskId)
+      .map(task =>
+        task.status === columnId
+          ? {
+            ...task, position: (tasksByColumn[columnId] || [])
+              .filter(t => t.id !== taskId)
+              .findIndex(t => t.id === task.id)
+          }
+          : task
+      );
+    const updatedColumnTasks = (tasksByColumn[columnId] || [])
+      .filter(task => task.id !== taskId)
+      .map((task, idx) => ({ ...task, position: idx }));
+
+    const updatedTasksByColumn = { ...tasksByColumn, [columnId]: updatedColumnTasks };
+
+    set({ tasks: updatedTasks, tasksByColumn: updatedTasksByColumn });
   }
+
 }));

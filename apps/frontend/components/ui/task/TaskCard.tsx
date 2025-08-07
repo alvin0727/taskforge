@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useState, useRef, useEffect } from 'react';
-import { Calendar, Clock, MoreHorizontal, Tag, User, X } from 'lucide-react';
+import { Calendar, Clock, MoreHorizontal, Tag, User, X, Trash2 } from 'lucide-react';
 import { Task, TaskUpdateFields, TaskPriority } from '@/lib/types/task';
 import { useRouter } from 'next/navigation';
 import { useTaskStore } from '@/stores/taskStore';
@@ -26,6 +26,7 @@ import {
 
 // Import team members hooks and functions
 import { useTeamMembers, getAssigneeAvatar } from '../team/TeamUtils';
+import { getAxiosErrorMessage } from '@/utils/errorMessage';
 
 interface Props {
   task: Task;
@@ -35,7 +36,7 @@ interface Props {
 function TaskCard({ task, isDragging = false }: Props) {
   const router = useRouter();
   const { updateTaskPartial } = useTaskStore();
-  
+
   // Get team members using the hook
   const teamMembers = useTeamMembers();
 
@@ -66,7 +67,7 @@ function TaskCard({ task, isDragging = false }: Props) {
 
     try {
       setIsUpdating(true);
-      
+
       // Optimistic update
       updateTaskPartial(task.id, updates);
 
@@ -174,7 +175,7 @@ function TaskCard({ task, isDragging = false }: Props) {
   const handleLabelsChange = async (e: React.MouseEvent, labelName: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const currentLabels = processTaskLabels(task.labels);
     const newLabels = currentLabels.includes(labelName)
       ? currentLabels.filter(l => l !== labelName)
@@ -220,6 +221,22 @@ function TaskCard({ task, isDragging = false }: Props) {
     setShowDueDateDropdown(false);
     setShowCustomDatePicker(false);
   };
+
+  const deleteTask = async (taskId: string) => {
+    try {
+      const response = await taskService.deleteTask(taskId);
+      if (response.message) {
+        toast.success('Task deleted successfully');
+        useTaskStore.getState().removeTask(taskId);
+      }
+    } catch (error) {
+      const errorMess = getAxiosErrorMessage(error);
+      toast.error(`Failed to delete task: ${errorMess}`);
+    }
+
+  }
+
+
 
   // Process current labels
   const currentLabels = processTaskLabels(task.labels);
@@ -514,7 +531,7 @@ function TaskCard({ task, isDragging = false }: Props) {
             </button>
 
             {showMoreMenu && (
-              <div className={`absolute ${isTopCard ? 'top-6' : 'bottom-6'} right-0 w-48 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-20`}>
+               <div className="absolute top-6 right-0 w-48 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-20">
                 <div className="p-1">
                   <button
                     onClick={(e) => {
@@ -572,17 +589,30 @@ function TaskCard({ task, isDragging = false }: Props) {
                     <span>Estimated Hours</span>
                   </button>
                 </div>
+                <div className="border-t border-neutral-700/50 mt-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteTask(task.id);
+                      setShowMoreMenu(false);
+                    }}
+                    className="w-full flex items-center px-3 py-2 text-sm text-red-400 hover:text-red-200 hover:bg-red-800/50 rounded-md transition-colors"
+                  >
+                    <Trash2 size={14} className="mr-2" />
+                    <span>Delete Task</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Labels Dropdown - Fixed positioning yang benar */}
+      {/* Labels Dropdown */}
       {showLabelsDropdown && (
         <div className="fixed inset-0 z-50" ref={labelsRef}>
           <div className="absolute inset-0 bg-black/20" onClick={() => setShowLabelsDropdown(false)} />
-          <div 
+          <div
             className="absolute w-64 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl"
             style={{
               top: cardRef.current ? cardRef.current.getBoundingClientRect().bottom + 8 : '50%',
@@ -691,6 +721,17 @@ function TaskCard({ task, isDragging = false }: Props) {
               >
                 <Clock size={14} className="mr-2" />
                 <span>Set Hours</span>
+              </button>
+              <button
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  deleteTask(task.id);
+                  setShowContextMenu(false);
+                }}
+                className="w-full flex items-center px-3 py-2 text-sm text-red-400 hover:text-red-200 hover:bg-red-800/50 rounded-md transition-colors"
+              >
+                <Trash2 size={14} className="mr-2" />
+                <span>Delete Task</span>
               </button>
             </div>
           </div>

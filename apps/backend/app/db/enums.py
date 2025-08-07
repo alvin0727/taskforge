@@ -36,6 +36,7 @@ class UserRole(str, Enum):
 class ActivityType(str, Enum):
     TASK_CREATED = "task_created"
     TASK_UPDATED = "task_updated"
+    TASK_DELETED = "task_deleted"
     TASK_COMPLETED = "task_completed"
     TASK_ASSIGNED = "task_assigned"
     TASK_COMMENTED = "task_commented"

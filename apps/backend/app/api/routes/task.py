@@ -122,6 +122,26 @@ async def update_task_partial(
         logger.error(f"Error updating task: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+@router.delete("/{task_id}")
+async def delete_task(
+    task_id: str,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Delete a task.
+    Only project members can delete tasks.
+    """
+    try:
+        user_id = ObjectId(current_user["id"])
+        task_object_id = ObjectId(task_id)
+
+        result = await TaskService.delete_task(user_id, task_object_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting task: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/generate-dummy-tasks")
 async def generate_dummy_tasks(

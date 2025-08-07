@@ -35,11 +35,16 @@ export async function updateTaskPartial(
     return res.data;
 }
 
+export async function deleteTask(taskId: string): Promise<{ message: string }> {
+    const res = await api.delete(`/tasks/${taskId}`);
+    return res.data;
+}
 
 export default {
     getTaskByBoard,
     updateTaskPosition,
     updateTaskStatus,
     createNewTask,
-    updateTaskPartial
+    updateTaskPartial,
+    deleteTask
 };

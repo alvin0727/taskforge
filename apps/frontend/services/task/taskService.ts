@@ -27,10 +27,16 @@ export async function updateTaskPartial(updateData: TaskTypes.RequestTaskUpdateP
     return res;
 }
 
+export async function deleteTask(taskId: string): Promise<{ message: string }> {
+    const res = await taskAdapter.deleteTask(taskId);
+    return res;
+}
+
 export default {
     getTasksByBoard,
     updateTaskPosition,
     updateTaskStatus,
     createNewTask,
-    updateTaskPartial
+    updateTaskPartial,
+    deleteTask
 };

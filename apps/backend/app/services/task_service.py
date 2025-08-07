@@ -367,6 +367,65 @@ class TaskService:
                 status_code=500,
                 detail=f"Failed to update task: {str(e)}"
             )
+            
+    @staticmethod
+    async def delete_task(
+        user_id: ObjectId,
+        task_id: ObjectId
+    ) -> Dict[str, Any]:
+        """Delete a task by ID"""
+        try:
+            # Find the task
+            task = await db["tasks"].find_one({"_id": task_id})
+            
+            # If task not found, raise 404
+            if not task:
+                raise HTTPException(status_code=404, detail="Task not found")
+            
+            # Verify user has access to project
+            await verify_user_access_to_project(user_id, task["project_id"])\
+                
+            column_id = task.get("column_id")
+            project_id = task["project_id"]
+            
+            # Delete the task
+            await db["tasks"].delete_one({"_id": task_id})
+            
+             # Reorder positions in the same column
+            if column_id:
+                query = {
+                    "project_id": project_id,
+                    "column_id": column_id,
+                    "archived": False
+                }
+                tasks_in_column = await db["tasks"].find(query).sort("position", 1).to_list(length=None)
+                from pymongo import UpdateOne
+                bulk_ops = []
+                for idx, t in enumerate(tasks_in_column):
+                    bulk_ops.append(
+                        UpdateOne({"_id": t["_id"]}, {"$set": {"position": idx}})
+                    )
+                if bulk_ops:
+                    await db["tasks"].bulk_write(bulk_ops)
+            
+            # Log activity for task deletion
+            await TaskService._log_activity(
+                user_id=user_id,
+                project_id=task["project_id"],
+                activity_type=ActivityType.TASK_DELETED,
+                description=f"Deleted task '{task['title']}'"
+            )
+            
+            return {"message": "Task deleted successfully", "task_id": str(task_id)}
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to delete task: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete task: {str(e)}"
+            )
 
     @staticmethod
     async def _get_next_position(
