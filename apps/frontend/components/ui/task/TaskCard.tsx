@@ -23,7 +23,9 @@ import {
   availableLabels,
   processTaskLabels
 } from './TaskUtilsFunction';
-import { teamMembers, getAssigneeAvatar } from '../team/TeamUtils';
+
+// Import team members hooks and functions
+import { useTeamMembers, getAssigneeAvatar } from '../team/TeamUtils';
 
 interface Props {
   task: Task;
@@ -33,6 +35,9 @@ interface Props {
 function TaskCard({ task, isDragging = false }: Props) {
   const router = useRouter();
   const { updateTaskPartial } = useTaskStore();
+  
+  // Get team members using the hook
+  const teamMembers = useTeamMembers();
 
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
@@ -156,6 +161,7 @@ function TaskCard({ task, isDragging = false }: Props) {
 
   const handleAssigneeChange = async (e: React.MouseEvent, assigneeId: string) => {
     e.stopPropagation();
+    console.log('Changing assignee to:', assigneeId);
     await updateTask({ assignee_id: assigneeId || null });
     setShowAssigneeDropdown(false);
   };
@@ -250,7 +256,7 @@ function TaskCard({ task, isDragging = false }: Props) {
                 className="hover:opacity-80 transition-opacity"
                 disabled={isUpdating}
               >
-                {getAssigneeAvatar(task.assignee_id ?? "")}
+                {getAssigneeAvatar(task.assignee_id ?? "", teamMembers)}
               </button>
 
               {showAssigneeDropdown && (
@@ -264,20 +270,26 @@ function TaskCard({ task, isDragging = false }: Props) {
                       className="w-full flex items-center px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700/50 rounded-md transition-colors"
                       disabled={isUpdating}
                     >
-                      {getAssigneeAvatar("")}
+                      {getAssigneeAvatar("", teamMembers)}
                       <span className="ml-2">No assignee</span>
                     </button>
-                    {teamMembers.map((member) => (
-                      <button
-                        key={member.id}
-                        onClick={(e) => handleAssigneeChange(e, member.id)}
-                        className="w-full flex items-center px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700/50 rounded-md transition-colors"
-                        disabled={isUpdating}
-                      >
-                        {getAssigneeAvatar(member.id)}
-                        <span className="ml-2">{member.name}</span>
-                      </button>
-                    ))}
+                    {teamMembers.length > 0 ? (
+                      teamMembers.map((member) => (
+                        <button
+                          key={member.id}
+                          onClick={(e) => handleAssigneeChange(e, member.id)}
+                          className="w-full flex items-center px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700/50 rounded-md transition-colors"
+                          disabled={isUpdating}
+                        >
+                          {getAssigneeAvatar(member.id, teamMembers)}
+                          <span className="ml-2">{member.name}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-neutral-500">
+                        No team members available
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

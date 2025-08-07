@@ -333,6 +333,10 @@ class TaskService:
             for field in protected_fields:
                 update_data.pop(field, None)
 
+            # Convert assignee_id to ObjectId if present and not None
+            if "assignee_id" in update_data and update_data["assignee_id"]:
+                update_data["assignee_id"] = ObjectId(update_data["assignee_id"])
+
             # Always update updated_at
             update_data["updated_at"] = datetime.utcnow()
 
