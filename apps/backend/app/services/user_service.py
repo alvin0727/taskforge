@@ -608,3 +608,32 @@ class UserService:
             logger.error(f"Error refreshing user session: {e}")
             raise HTTPException(
                 status_code=500, detail="Internal server error")
+
+    @staticmethod
+    async def logout_user(user_id: str, response: Response) -> None:
+        """
+        Log out the user by invalidating their session and clearing cookies.
+        Args:
+            user_id (str): The ID of the user to log out.
+            response (Response): FastAPI response object to clear cookies.
+        Returns:
+            None. Raises exception if failed.
+        """
+        try:
+            # Invalidate user session (e.g., remove refresh token from database)
+            await db["users"].update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"is_active": False}}
+            )
+
+            # Clear cookies
+            await dependencies.clear_auth_cookie(response)
+
+            # No return value needed (None)
+            return
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error logging out user: {e}")
+            raise HTTPException(
+                status_code=500, detail="Internal server error")

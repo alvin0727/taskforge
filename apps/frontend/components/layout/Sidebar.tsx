@@ -27,12 +27,12 @@ import {
 import { useOrganizationStore } from "@/stores/organizationStore";
 import organizationService from "@/services/organization/organizationService";
 import projectService from "@/services/projects/projectService";
+import userService from "@/services/users/userService";
 import { useUserStore } from "@/stores/userStore";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { Organization } from "@/lib/types/organization";
 import { RequestCreateProject } from "@/lib/types/project";
-import { SidebarProject } from "@/lib/types/project";
 import OrganizationDropdown from "../ui/sidebar/OrganizationDropdown";
 import RecentProjectsList from "../ui/sidebar/RecentProjectsList";
 import FavoritesList from "../ui/sidebar/FavoritesList";
@@ -40,6 +40,7 @@ import UserProfileMenu from "../ui/sidebar/UserProfileMenu";
 import SidebarNavLinks from "../ui/sidebar/SidebarNavLinks";
 import ProjectForm from "@/components/ui/project/ProjectForm";
 import Footer from "./Footer";
+import toast from "react-hot-toast";
 
 const navLinks = [
   { name: "Dashboard", href: "/", icon: Home, iconColor: "text-blue-400" },
@@ -218,6 +219,16 @@ export default function Sidebar() {
     closeAvatarMenu();
     closeOrgDropdown();
   }, [closeSidebar, closeAvatarMenu, closeOrgDropdown]);
+
+  const handleLogout = async () => {
+    try {
+      await userService.logout();
+      toast.success("Logged out successfully");
+      router.replace("/user/login");
+    } catch (error) {
+      toast.error("Failed to log out. Please try again.");
+    }
+  }
 
   const handleCreateProject = async (data: RequestCreateProject) => {
     setProjectFormLoading(true);
@@ -399,8 +410,8 @@ export default function Sidebar() {
             avatarMenu={avatarMenu}
             avatarRef={avatarRef}
             toggleAvatarMenu={toggleAvatarMenu}
-            closeAvatarMenu={closeAvatarMenu}
             handleNavClick={handleNavClick}
+            onLogout={handleLogout}
           />
         )}
       </aside>

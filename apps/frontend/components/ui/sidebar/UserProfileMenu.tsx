@@ -8,8 +8,8 @@ interface UserProfileMenuProps {
   avatarMenu: boolean;
   avatarRef: React.RefObject<HTMLButtonElement | null>;
   toggleAvatarMenu: () => void;
-  closeAvatarMenu: () => void;
   handleNavClick: () => void;
+  onLogout: () => void;
 }
 
 const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
@@ -18,8 +18,8 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   avatarMenu,
   avatarRef,
   toggleAvatarMenu,
-  closeAvatarMenu,
   handleNavClick,
+  onLogout
 }) => (
   <div className="p-2 h-18">
     <div className="relative">
@@ -58,7 +58,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
           <hr className="my-2 border-neutral-700" />
           <button
             className="flex items-center gap-3 w-full text-left px-4 py-2 text-red-400 hover:bg-neutral-700 hover:text-red-300 transition-colors focus:outline-none focus:bg-neutral-700"
-            onClick={closeAvatarMenu}
+            onMouseDown={onLogout}
           >
             <X size={16} />
             Sign Out

@@ -6,6 +6,11 @@ async function login(data: LoginRequest): Promise<any> {
   return res;
 }
 
+async function logout(): Promise<any> {
+  const res = await UserAdapter.logout();
+  return res;
+}
+
 async function verifyOTP(data: VerifyOTPRequest): Promise<{ message: string; user: User }> {
   const res = await UserAdapter.verifyOTP(data);
   return res;
@@ -38,6 +43,7 @@ async function verifyEmail(token: string): Promise<any> {
 
 export default {
   login,
+  logout,
   verifyOTP,
   getProfile,
   verifyEmail,

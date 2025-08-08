@@ -98,3 +98,8 @@ async def get_me(current_user=Depends(get_current_user)):
 async def refresh_token(response: Response, current_user=Depends(get_current_user_from_refresh_token)):
     await user_service.refresh_user_session(current_user["id"], response)
     return {"message": "Session refreshed successfully"}
+
+@router.post("/logout")
+async def logout(response: Response, current_user=Depends(get_current_user)):
+    await user_service.logout_user(current_user["id"], response)
+    return {"message": "Logout successful"}
