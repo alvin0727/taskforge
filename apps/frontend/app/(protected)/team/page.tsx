@@ -631,7 +631,7 @@ export default function TeamPage() {
     }
 
     return (
-        <div className="min-h-screen bg-neutral-950 text-neutral-100">
+        <div className="min-h-screen bg-neutral-950 text-neutral-100 pt-16 lg:pt-0">
             <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4 lg:py-6">
                 {/* Header */}
                 <div className="mb-6">

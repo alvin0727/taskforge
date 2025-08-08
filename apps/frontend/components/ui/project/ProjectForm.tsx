@@ -6,6 +6,8 @@ import { useOrganizationStore } from "@/stores/organizationStore";
 import { SidebarProject } from "@/lib/types/project";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { toast } from "react-hot-toast";
+import { getAxiosErrorMessage } from "@/utils/errorMessage";
 
 interface CreateProjectRequest {
   organization_id: string;
@@ -168,8 +170,8 @@ export default function ProjectForm({ onSubmit, loading, onClose }: ProjectFormP
       // Close the form
       handleClose();
     } catch (error) {
-      console.error("Failed to create project:", error);
-      // Handle error here if needed
+      const errMsg = getAxiosErrorMessage(error);
+      toast.error(errMsg);
     }
   };
 

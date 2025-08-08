@@ -10,6 +10,7 @@ interface UserProfileMenuProps {
   toggleAvatarMenu: () => void;
   handleNavClick: () => void;
   onLogout: () => void;
+  logoutLoading: boolean;
 }
 
 const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
@@ -19,7 +20,8 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   avatarRef,
   toggleAvatarMenu,
   handleNavClick,
-  onLogout
+  onLogout,
+  logoutLoading
 }) => (
   <div className="p-2 h-18">
     <div className="relative">
@@ -61,7 +63,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
             onMouseDown={onLogout}
           >
             <X size={16} />
-            Sign Out
+            {logoutLoading ? "Signing Out..." : "Sign Out"}
           </button>
         </div>
       )}

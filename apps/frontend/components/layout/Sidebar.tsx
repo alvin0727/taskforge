@@ -84,6 +84,7 @@ export default function Sidebar() {
   const setMembers = useOrganizationStore((state) => state.setMembers);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectFormLoading, setProjectFormLoading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -221,12 +222,16 @@ export default function Sidebar() {
   }, [closeSidebar, closeAvatarMenu, closeOrgDropdown]);
 
   const handleLogout = async () => {
+    if (logoutLoading) return;
+    setLogoutLoading(true);
     try {
       await userService.logout();
       toast.success("Logged out successfully");
       router.replace("/user/login");
     } catch (error) {
-      toast.error("Failed to log out. Please try again.");
+      throw error;
+    } finally {
+      setLogoutLoading(false);
     }
   }
 
@@ -412,6 +417,7 @@ export default function Sidebar() {
             toggleAvatarMenu={toggleAvatarMenu}
             handleNavClick={handleNavClick}
             onLogout={handleLogout}
+            logoutLoading={logoutLoading} 
           />
         )}
       </aside>
