@@ -12,6 +12,7 @@ export interface Task {
   description: string;
   status: string;
   priority: TaskPriority | null; // Allow null from backend
+  project_id: string | null;
   assignee_id: string | null;
   due_date: string | null;
   estimated_hours: number | null;

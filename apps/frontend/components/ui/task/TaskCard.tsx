@@ -27,7 +27,6 @@ import {
 // Import team members hooks and functions
 import { getAssigneeAvatar } from '../team/TeamUtils';
 import { getAxiosErrorMessage } from '@/utils/errorMessage';
-import { ProjectMember } from '@/lib/types/project';
 
 interface TaskCardTeamMember {
   id: string;
@@ -99,7 +98,7 @@ function TaskCard({ task, isDragging = false, teamMembers }: Props) {
 
   const handleClick = () => {
     if (!isDragging) {
-      router.push(`/task/${task.id}`);
+      router.push(`/task?task_id=${task.id}`);
     }
   };
 

@@ -54,7 +54,6 @@ export const useEnsureProjectMembers = (projectId?: string) => {
 // Get team members for a specific project
 export const useProjectTeamMembers = (projectId?: string) => {
   const projectMembers = useProjectStore((state) => state.projectMembers);
-  const projects = useProjectStore((state) => state.projects);
   
   // Ensure members are loaded for this specific project
   useEnsureProjectMembers(projectId);

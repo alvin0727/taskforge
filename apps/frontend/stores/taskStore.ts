@@ -12,6 +12,7 @@ interface TaskStore {
   reorderTasks: (columnId: string, tasks: Task[]) => void;
   updateTaskPartial: (taskId: string, updates: Partial<Task>) => void;
   removeTask: (taskId: string) => void;
+  addTask: (task: Task) => void;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -135,6 +136,22 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       .filter(task => task.id !== taskId)
       .map((task, idx) => ({ ...task, position: idx }));
 
+    const updatedTasksByColumn = { ...tasksByColumn, [columnId]: updatedColumnTasks };
+
+    set({ tasks: updatedTasks, tasksByColumn: updatedTasksByColumn });
+  },
+  addTask: (task: Task) => {
+    const { tasks, tasksByColumn } = get();
+
+    // Add task to tasks array
+    const updatedTasks = [...tasks, task];
+
+    // Add task to tasksByColumn
+    const columnId = task.status;
+    const updatedColumnTasks = [...(tasksByColumn[columnId] || []), task].map((t, idx) => ({
+      ...t,
+      position: idx,
+    }));
     const updatedTasksByColumn = { ...tasksByColumn, [columnId]: updatedColumnTasks };
 
     set({ tasks: updatedTasks, tasksByColumn: updatedTasksByColumn });

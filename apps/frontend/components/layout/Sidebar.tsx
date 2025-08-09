@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Menu,
@@ -65,7 +66,7 @@ const favorites = [
 ];
 
 export default function Sidebar() {
-  const router = require('next/navigation').useRouter();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const sidebarHidden = useSidebarStore((state) => state.hidden);
   const setSidebarHidden = useSidebarStore((state) => state.setHidden);

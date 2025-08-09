@@ -32,11 +32,17 @@ export async function deleteTask(taskId: string): Promise<{ message: string }> {
     return res;
 }
 
+export async function getTaskById(taskId: string): Promise<TaskTypes.Task> {
+    const res = await taskAdapter.getTaskById(taskId);
+    return res;
+}
+
 export default {
     getTasksByBoard,
     updateTaskPosition,
     updateTaskStatus,
     createNewTask,
     updateTaskPartial,
-    deleteTask
+    deleteTask,
+    getTaskById
 };

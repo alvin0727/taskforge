@@ -40,11 +40,17 @@ export async function deleteTask(taskId: string): Promise<{ message: string }> {
     return res.data;
 }
 
+export async function getTaskById(taskId: string): Promise<TaskTypes.Task> {
+    const res = await api.get(`/tasks/${taskId}`);
+    return res.data.task;
+}
+
 export default {
     getTaskByBoard,
     updateTaskPosition,
     updateTaskStatus,
     createNewTask,
     updateTaskPartial,
-    deleteTask
+    deleteTask,
+    getTaskById
 };
