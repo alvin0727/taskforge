@@ -33,6 +33,8 @@ import TaskCard from "@/components/ui/task/TaskCard";
 import Loading from "@/components/layout/Loading";
 import TaskForm from "@/components/ui/task/TaskForm";
 import { RequestTaskCreate, TaskPriority } from "@/lib/types/task";
+import { useTeamMembers } from '@/components/ui/team/TeamUtils';
+import { ProjectMember } from "@/lib/types/project";
 
 function DroppableColumn({
   column,
@@ -86,7 +88,7 @@ function DroppableColumn({
 }
 
 // Update the TaskCard usage in your board page
-function SortableTaskCard({ task }: { task: Task }) {
+function SortableTaskCard({ task, teamMembers }: { task: Task, teamMembers: ProjectMember[] }) {
   const {
     attributes,
     listeners,
@@ -112,7 +114,7 @@ function SortableTaskCard({ task }: { task: Task }) {
       className="mb-3"
     >
       {/* Updated TaskCard without callbacks */}
-      <TaskCard task={task} isDragging={isDragging} />
+      <TaskCard task={task} isDragging={isDragging} teamMembers={teamMembers} />
     </div>
   );
 }
@@ -123,6 +125,8 @@ export default function BoardPage() {
 
   const { board, setBoard } = useBoardStore();
   const { tasksByColumn, setTasks, updateTaskStatus, reorderTasks, setTasksByColumn } = useTaskStore();
+
+  const teamMembers = useTeamMembers();
 
   const [loading, setLoading] = useState(false);
   const [taskFormLoading, setTaskFormLoading] = useState(false);
@@ -564,7 +568,7 @@ export default function BoardPage() {
                       >
                         {columnTasks.map((task) =>
                           task.id === activeId ? null : (
-                            <SortableTaskCard key={task.id} task={task} />
+                            <SortableTaskCard key={task.id} task={task} teamMembers={teamMembers} />
                           )
                         )}
 
@@ -630,7 +634,7 @@ export default function BoardPage() {
       <DragOverlay>
         {activeTask ? (
           <div className="opacity-100">
-            <TaskCard task={activeTask} isDragging={true} />
+            <TaskCard task={activeTask} isDragging={true} teamMembers={teamMembers} />
           </div>
         ) : null}
       </DragOverlay>

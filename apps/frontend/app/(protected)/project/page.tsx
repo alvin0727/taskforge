@@ -1,17 +1,19 @@
 'use client'
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useProjectStore } from "@/stores/projectStore"
 import { useOrganizationStore } from "@/stores/organizationStore"
 import { FolderOpen, Calendar, Folder, CheckCircle, Clock, AlertCircle, BarChart3 } from "lucide-react"
 import projectService from "@/services/projects/projectService"
 import { getAxiosErrorMessage } from "@/utils/errorMessage"
 import toast from "react-hot-toast"
+import Loading from "@/components/layout/Loading"
 
 export default function ActiveProjectsPage() {
     const activeOrg = useOrganizationStore((state) => state.activeOrg)
     const projectList = useProjectStore((state) => state.projectList)
     const setProjectList = useProjectStore((state) => state.setProjectList)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const fetchActiveProjects = async () => {
@@ -22,10 +24,14 @@ export default function ActiveProjectsPage() {
             } catch (error) {
                 const errMsg = getAxiosErrorMessage(error)
                 toast.error(`Failed to fetch active projects: ${errMsg}`)
+            } finally {
+                setLoading(false)
             }
         };
         fetchActiveProjects();
     }, [activeOrg, setProjectList]);
+
+    if (loading) return <Loading />;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-neutral-100 pt-20 md:pt-16 lg:pt-8">

@@ -111,9 +111,6 @@ export default function Sidebar() {
           const response = await projectService.getSideBarProject(activeOrg.id);
           setProjects(response.projects || []);
 
-          // Fetch organization members
-          const memberRes = await organizationService.getOrganizationMembers(activeOrg.slug);
-          setMembers(memberRes.members || []);
         }
       } catch (err) {
         console.error("Failed to fetch organizations or recent projects", err);

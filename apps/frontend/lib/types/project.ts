@@ -20,7 +20,7 @@ export interface ProjectMember {
     id: string;
     name: string;
     email: string;
-    avatar?: string;
+    avatar: string;
     role?: string;
     status?: string;
     joined_at?: string;

@@ -25,20 +25,32 @@ import {
 } from './TaskUtilsFunction';
 
 // Import team members hooks and functions
-import { useTeamMembers, getAssigneeAvatar } from '../team/TeamUtils';
+import { getAssigneeAvatar } from '../team/TeamUtils';
 import { getAxiosErrorMessage } from '@/utils/errorMessage';
+import { ProjectMember } from '@/lib/types/project';
+
+interface TaskCardTeamMember {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role?: string;
+  status?: string;
+  joined_at?: string;
+}
 
 interface Props {
   task: Task;
   isDragging?: boolean;
+  teamMembers: TaskCardTeamMember[];
 }
 
-function TaskCard({ task, isDragging = false }: Props) {
+function TaskCard({ task, isDragging = false, teamMembers }: Props) {
   const router = useRouter();
   const { updateTaskPartial } = useTaskStore();
 
-  // Get team members using the hook
-  const teamMembers = useTeamMembers();
+  // // Get team members using the hook
+  // const teamMembers = useTeamMembers();
 
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
@@ -211,7 +223,8 @@ function TaskCard({ task, isDragging = false }: Props) {
   };
 
   const setDueDate = async (date: string) => {
-    await updateTask({ due_date: date || null });
+    const isoDate = new Date(date).toISOString();
+    await updateTask({ due_date: isoDate || null });
     setShowDueDateDropdown(false);
     setShowCustomDatePicker(false);
   };
@@ -451,7 +464,7 @@ function TaskCard({ task, isDragging = false }: Props) {
                       )}
                     </div>
                     {showCustomDatePicker && (
-                      <div className="mt-2 px-2 pb-2">
+                      <div className="mt-2 px-2 pb-2" onClick={e => e.stopPropagation()}>
                         <DatePicker
                           selected={task.due_date ? new Date(task.due_date) : null}
                           onChange={(date: Date | null) => {
@@ -531,7 +544,7 @@ function TaskCard({ task, isDragging = false }: Props) {
             </button>
 
             {showMoreMenu && (
-               <div className="absolute top-6 right-0 w-48 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-20">
+              <div className="absolute top-6 right-0 w-48 bg-neutral-800/95 backdrop-blur-xl border border-neutral-700/50 rounded-lg shadow-xl z-20">
                 <div className="p-1">
                   <button
                     onClick={(e) => {

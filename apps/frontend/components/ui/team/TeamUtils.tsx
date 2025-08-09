@@ -5,7 +5,8 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useEffect, useState, useMemo } from "react";
 import ProjectService from "@/services/projects/projectService";
 
-export const useEnsureProjectMembers = () => {
+// Enhanced hook that takes projectId parameter
+export const useEnsureProjectMembers = (projectId?: string) => {
   const projects = useProjectStore((state) => state.projects);
   const projectMembersMap = useProjectStore((state) => state.projectMembers);
   const setProjectMembers = useProjectStore((state) => state.setProjectMembers);
@@ -15,15 +16,20 @@ export const useEnsureProjectMembers = () => {
   useEffect(() => {
     if (!activeOrg || projects.length === 0) return;
 
-    const fetchMembersForMissingProjects = async () => {
-      const projectsNeedingMembers = projects.filter(
+    const fetchMembersForProjects = async () => {
+      // If projectId is provided, focus on that project
+      const targetProjects = projectId 
+        ? projects.filter(project => project.id === projectId)
+        : projects;
+
+      const projectsNeedingMembers = targetProjects.filter(
         project => !projectMembersMap[project.id] || projectMembersMap[project.id].length === 0
       );
 
       if (projectsNeedingMembers.length === 0) return;
 
       for (const project of projectsNeedingMembers) {
-        if (loading[project.id]) continue; // Skip if already loading
+        if (loading[project.id]) continue;
 
         setLoading(prev => ({ ...prev, [project.id]: true }));
         
@@ -32,7 +38,6 @@ export const useEnsureProjectMembers = () => {
           setProjectMembers(project.id, data.members || []);
         } catch (error) {
           console.error(`Failed to fetch members for project ${project.slug}:`, error);
-          // Set empty array to prevent repeated requests
           setProjectMembers(project.id, []);
         } finally {
           setLoading(prev => ({ ...prev, [project.id]: false }));
@@ -40,17 +45,44 @@ export const useEnsureProjectMembers = () => {
       }
     };
 
-    fetchMembersForMissingProjects();
-  }, [activeOrg, projects, projectMembersMap, setProjectMembers]);
+    fetchMembersForProjects();
+  }, [activeOrg, projects, projectMembersMap, setProjectMembers, projectId, loading]);
 
   return { loading };
+};
+
+// Get team members for a specific project
+export const useProjectTeamMembers = (projectId?: string) => {
+  const projectMembers = useProjectStore((state) => state.projectMembers);
+  const projects = useProjectStore((state) => state.projects);
+  
+  // Ensure members are loaded for this specific project
+  useEnsureProjectMembers(projectId);
+  
+  return useMemo(() => {
+    if (!projectId || !projectMembers[projectId]) return [];
+    
+    return projectMembers[projectId].map((member) => ({
+      id: member.id,
+      name: member.name,
+      email: member.email, // Include email from ProjectMember
+      avatar: member.name
+        ? member.name
+            .split(/[ ._]/)
+            .filter(Boolean)
+            .map((n) => n[0].toUpperCase())
+            .join('')
+            .slice(0, 2)
+        : '',
+    }));
+  }, [projectMembers, projectId]);
 };
 
 // Get all team members from all projects (flattened and deduplicated)
 export const useTeamMembers = () => {
   const projectMembers = useProjectStore((state) => state.projectMembers);
   
-  // Call the hook to ensure project members are loaded
+  // Call the hook to ensure project members are loaded for all projects
   useEnsureProjectMembers();
   
   return useMemo(() => {
@@ -67,6 +99,7 @@ export const useTeamMembers = () => {
     return uniqueMembers.map((member) => ({
       id: member.id,
       name: member.name,
+      email: member.email,
       avatar: member.name
         ? member.name
             .split(/[ ._]/)
@@ -79,29 +112,27 @@ export const useTeamMembers = () => {
   }, [projectMembers]);
 };
 
-// Get team members for a specific project
-export const useProjectTeamMembers = (projectId?: string) => {
-  const projectMembers = useProjectStore((state) => state.projectMembers);
+// Enhanced team members hook that focuses on current project first
+export const useCurrentProjectTeamMembers = (currentProjectId?: string) => {
+  const [members, setMembers] = useState<{ id: string; name: string; email: string; avatar: string }[]>([]);
   
-  // Call the hook to ensure project members are loaded
-  useEnsureProjectMembers();
+  // Get members for current project first
+  const currentProjectMembers = useProjectTeamMembers(currentProjectId);
   
-  return useMemo(() => {
-    if (!projectId || !projectMembers[projectId]) return [];
-    
-    return projectMembers[projectId].map((member) => ({
-      id: member.id,
-      name: member.name,
-      avatar: member.name
-        ? member.name
-            .split(/[ ._]/)
-            .filter(Boolean)
-            .map((n) => n[0].toUpperCase())
-            .join('')
-            .slice(0, 2)
-        : '',
-    }));
-  }, [projectMembers, projectId]);
+  // Get all members as fallback
+  const allTeamMembers = useTeamMembers();
+  
+  useEffect(() => {
+    if (currentProjectId && currentProjectMembers.length > 0) {
+      // Use current project members if available
+      setMembers(currentProjectMembers);
+    } else {
+      // Fallback to all team members
+      setMembers(allTeamMembers);
+    }
+  }, [currentProjectId, currentProjectMembers, allTeamMembers]);
+  
+  return members;
 };
 
 // Legacy function for backward compatibility (avoid using this)
@@ -131,9 +162,10 @@ export const getTeamMembers = (): { id: string; name: string; avatar: string }[]
   }));
 };
 
+// Enhanced getAssigneeAvatar with better error handling
 export const getAssigneeAvatar = (
   assigneeId?: string,
-  teamMembers: { id: string; name: string; avatar: string }[] = []
+  teamMembers: { id: string; name: string; avatar: string; email?: string }[] = []
 ) => {
   if (!assigneeId) {
     return (
@@ -153,7 +185,10 @@ export const getAssigneeAvatar = (
   }
 
   return (
-    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-[10px] font-medium text-white">
+    <div 
+      className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-[10px] font-medium text-white"
+      title={member.name}
+    >
       {member.avatar}
     </div>
   );

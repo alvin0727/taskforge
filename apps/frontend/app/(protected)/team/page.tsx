@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { ProjectMember } from "@/lib/types/project";
 import { OrganizationMember } from "@/lib/types/organization";
 import projectService from "@/services/projects/projectService";
+import organizationService from "@/services/organization/organizationService";
 import Loading from "@/components/layout/Loading";
 import {
     Users,
@@ -54,6 +55,7 @@ export default function TeamPage() {
     // Organization
     const orgMembers = useOrganizationStore((state) => state.members);
     const activeOrg = useOrganizationStore((state) => state.activeOrg);
+    const setMembers = useOrganizationStore((state) => state.setMembers);
 
     // Project
     const projects = useProjectStore((state) => state.projects);
@@ -88,12 +90,22 @@ export default function TeamPage() {
                 setViewMode('table');
             }
         };
-        
+
         checkScreenSize();
         window.addEventListener('resize', checkScreenSize);
-        
+
         return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
+
+    // Fetch Organziation members
+    useEffect(() => {
+        async function fetchMembers() {
+            if (!activeOrg?.slug) return;
+            const memberRes = await organizationService.getOrganizationMembers(activeOrg.slug);
+            setMembers(memberRes.members || []);
+        }
+        fetchMembers();
+    }, [activeOrg, setMembers]);
 
     // Initialize pagination for projects
     useEffect(() => {
@@ -356,7 +368,7 @@ export default function TeamPage() {
                         <Mail size={12} />
                         <span className="truncate">{member.email}</span>
                     </div>
-                    
+
                     {/* Tags in a more compact layout */}
                     <div className="flex flex-wrap gap-1.5">
                         {member.role && (
@@ -372,10 +384,10 @@ export default function TeamPage() {
                         {member.joined_at && (
                             <span className="flex items-center gap-1 text-neutral-400 text-xs px-2 py-0.5 bg-neutral-700/50 rounded">
                                 <Clock size={10} />
-                                {new Date(member.joined_at).toLocaleDateString('en-US', { 
-                                    month: 'short', 
-                                    day: 'numeric', 
-                                    year: '2-digit' 
+                                {new Date(member.joined_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: '2-digit'
                                 })}
                             </span>
                         )}
