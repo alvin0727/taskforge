@@ -80,9 +80,9 @@ async def change_task_status(
         task_object_id = ObjectId(task.task_id)
 
         result = await TaskService.change_task_status(
-            user_id, 
-            task_object_id, 
-            task.new_column_id, 
+            user_id,
+            task_object_id,
+            task.new_column_id,
         )
         return {
             "message": "Task status changed successfully",
@@ -93,6 +93,7 @@ async def change_task_status(
     except Exception as e:
         logger.error(f"Error changing task status: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 @router.put("/update-task-partial")
 async def update_task_partial(
@@ -108,8 +109,8 @@ async def update_task_partial(
         task_object_id = ObjectId(task_data.task_id)
 
         result = await TaskService.update_task_partial(
-            user_id, 
-            task_object_id, 
+            user_id,
+            task_object_id,
             task_data.updates
         )
         return {
@@ -121,6 +122,7 @@ async def update_task_partial(
     except Exception as e:
         logger.error(f"Error updating task: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 @router.delete("/{task_id}")
 async def delete_task(
@@ -143,11 +145,40 @@ async def delete_task(
         logger.error(f"Error deleting task: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+
+@router.get("/{task_id}")
+async def get_task(
+    task_id: str,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Get task details.
+    All project members can view tasks.
+    """
+    try:
+        user_id = ObjectId(current_user["id"])
+        task_object_id = ObjectId(task_id)
+
+        result = await TaskService.get_task_by_id(
+            user_id,
+            task_object_id
+        )
+        return {
+            "message": "Task retrieved successfully",
+            "task": result
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving task: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
 @router.post("/generate-dummy-tasks")
 async def generate_dummy_tasks(
-    project_id: str, 
-    board_id: str, 
-    num_tasks: int = 10, 
+    project_id: str,
+    board_id: str,
+    num_tasks: int = 10,
     current_user: str = Depends(get_current_user)
 ):
     """
@@ -158,15 +189,15 @@ async def generate_dummy_tasks(
         # Verify user has access to project
         user_id = ObjectId(current_user["id"])
         await verify_user_access_to_project(user_id, ObjectId(project_id))
-        
+
         result = await TaskService.generate_tasks_for_board(
-            project_id, 
-            board_id, 
-            num_tasks, 
+            project_id,
+            board_id,
+            num_tasks,
             user_id
         )
         return {
-            "message": "Dummy tasks generated successfully", 
+            "message": "Dummy tasks generated successfully",
             "task_ids": [str(task_id) for task_id in result]
         }
     except HTTPException:

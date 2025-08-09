@@ -428,6 +428,32 @@ class TaskService:
             )
 
     @staticmethod
+    async def get_task_by_id(
+        user_id: ObjectId,
+        task_id: ObjectId
+    ) -> Dict[str, Any]:
+        """Get a task by ID"""
+        try:
+            # Find the task
+            task = await db["tasks"].find_one({"_id": task_id})
+            if not task:
+                raise HTTPException(status_code=404, detail="Task not found")
+
+            # Verify user has access to project
+            await verify_user_access_to_project(user_id, task["project_id"])
+
+            return TaskService._format_task_response(task)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get task: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get task: {str(e)}"
+            )
+
+    @staticmethod
     async def _get_next_position(
         project_id: ObjectId,
         board_id: Optional[str],
