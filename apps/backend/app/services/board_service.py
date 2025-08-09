@@ -13,8 +13,6 @@ db = get_db()
 
 class BoardService:
 
-    # ...existing code...
-
     @staticmethod
     def _get_default_columns() -> List[Dict[str, Any]]:
         """Get default Kanban columns (6 columns based on TaskStatus)"""
@@ -88,7 +86,7 @@ class BoardService:
             logger.error(f"Failed to get board: {str(e)}")
             raise HTTPException(
                 status_code=500, detail=f"Failed to get board: {str(e)}")
-            
+
     @staticmethod
     async def get_board_tasks(
         user_id: ObjectId,
@@ -104,7 +102,88 @@ class BoardService:
             raise
         except Exception as e:
             logger.error(f"Failed to get board tasks: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Failed to get board tasks: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get board tasks: {str(e)}")
+
+    @staticmethod
+    async def list_boards_by_organization(
+        user_id: ObjectId,
+        organization_id: ObjectId
+    ) -> Dict[str, Any]:
+        """
+        List all boards in an organization, grouped by project (active & archived),
+        with board stats.
+        """
+        try:
+            db = get_db()
+
+            # 1. Get all projects in the organization (active & archived)
+            projects = await db["projects"].find({
+                "organization_id": organization_id
+            }).to_list(length=None)
+
+            # Pisahkan project aktif & archived
+            active_projects = [
+                p for p in projects if not p.get("archived", False)]
+            archived_projects = [
+                p for p in projects if p.get("archived", False)]
+
+            # Helper untuk ambil boards & stats per project
+            async def get_boards_for_projects(projects):
+                result = []
+                for project in projects:
+                    boards = await db["boards"].find({
+                        "project_id": project["_id"]
+                    }).sort("updated_at", -1).to_list(length=None)
+                    board_list = []
+                    for board in boards:
+                        stats = await BoardService.get_board_statistics(user_id, board["_id"])
+                        board_list.append({
+                            "id": str(board["_id"]),
+                            "name": board["name"],
+                            "project_id": str(board["project_id"]),
+                            "is_default": board.get("is_default", False),
+                            "created_at": board["created_at"],
+                            "updated_at": board["updated_at"],
+                            "stats": stats
+                        })
+                    result.append({
+                        "project": {
+                            "id": str(project["_id"]),
+                            "name": project["name"],
+                            "archived": project.get("archived", False),
+                            "color": project.get("color", "#3B82F6"),
+                        },
+                        "boards": board_list
+                    })
+                return result
+
+            # 2. Get boards & stats for active and archived projects
+            active = await get_boards_for_projects(active_projects)
+            archived = await get_boards_for_projects(archived_projects)
+            
+            # Sort active projects by latest board updated_at
+            active.sort(
+                key=lambda x: x["boards"][0]["updated_at"] if x["boards"] else datetime.min,
+                reverse=True
+            )
+            # (opsional) Sort archived 
+            archived.sort(
+                key=lambda x: x["boards"][0]["updated_at"] if x["boards"] else datetime.min,
+                reverse=True
+)
+
+            return {
+                "active": active,
+                "archived": archived
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to list boards by organization: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to list boards by organization: {str(e)}"
+            )
 
     @staticmethod
     async def update_board(
@@ -491,9 +570,9 @@ class BoardService:
                     "urgent_priority": {"$sum": {"$cond": [{"$eq": ["$priority", "urgent"]}, 1, 0]}},
                     "overdue": {"$sum": {"$cond": [
                         {"$and": [
+                            {"$ne": ["$due_date", None]},  # <-- Add check for due_date not null
                             {"$lt": ["$due_date", datetime.utcnow()]},
-                            {"$not": {
-                                "$in": ["$status", ["done", "canceled"]]}}
+                            {"$not": {"$in": ["$status", ["done", "canceled"]]}}
                         ]}, 1, 0
                     ]}}
                 }}

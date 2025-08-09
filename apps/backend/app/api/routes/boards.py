@@ -44,3 +44,15 @@ async def getBoardTasks(
     return {
         "tasks": tasks
     }
+
+@router.get("/{org_id}/list-boards")
+async def listBoards(
+    org_id: str,
+    current_user=Depends(get_current_user),
+):
+    """Get all boards for an organization"""
+    user_id = ObjectId(current_user["id"])
+    org_id = ObjectId(org_id)
+
+    boards = await board_service.list_boards_by_organization(user_id, org_id)
+    return boards
