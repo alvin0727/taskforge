@@ -33,7 +33,7 @@ import TaskCard from "@/components/ui/task/TaskCard";
 import Loading from "@/components/layout/Loading";
 import TaskForm from "@/components/ui/task/TaskForm";
 import { RequestTaskCreate, TaskPriority } from "@/lib/types/task";
-import { useTeamMembers } from '@/components/ui/team/TeamUtils';
+import { useProjectTeamMembers } from '@/components/ui/team/TeamUtils';
 import { ProjectMember } from "@/lib/types/project";
 
 function DroppableColumn({
@@ -126,7 +126,7 @@ export default function BoardPage() {
   const { board, setBoard } = useBoardStore();
   const { tasksByColumn, setTasks, updateTaskStatus, reorderTasks, setTasksByColumn } = useTaskStore();
 
-  const teamMembers = useTeamMembers();
+  const teamMembers = useProjectTeamMembers(projectId ?? undefined);
 
   const [loading, setLoading] = useState(false);
   const [taskFormLoading, setTaskFormLoading] = useState(false);

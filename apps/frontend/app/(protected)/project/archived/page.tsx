@@ -27,7 +27,7 @@ export default function ArchivedProjectPage() {
             } finally {
                 setLoading(false)
             }
-            
+
         };
         fetchArchivedProjects();
     }, [activeOrg, setProjectList]);
@@ -35,7 +35,7 @@ export default function ArchivedProjectPage() {
     if (loading) return <Loading />;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-neutral-100 pt-20 md:pt-16 lg:pt-8">
+        <div className="min-h-screentext-neutral-100 pt-20 md:pt-16 lg:pt-8">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {/* Header Section */}
                 <div className="mb-8 md:mb-10">

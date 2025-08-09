@@ -280,7 +280,7 @@ export default function Sidebar() {
       <aside
         ref={sidebarRef}
         className={`
-            fixed top-14 mb-1 md:top-0 left-0 h-[calc(100vh-3.5rem)] md:h-auto z-40 bg-neutral-900 border-r border-b border-neutral-800 flex flex-col
+            fixed top-14 md:top-0 left-0 h-[calc(100vh-3.5rem)] md:h-auto z-40 bg-neutral-900 border-r border-b border-neutral-800 flex flex-col
             ${menuOpen ? "translate-x-0" : "-translate-x-full"}
             md:relative md:translate-x-0 md:flex md:flex-col md:self-stretch
             ${sidebarHidden ? "md:w-16" : "md:w-[18rem]"}

@@ -73,13 +73,6 @@ export default function ActiveBoardsPage() {
                     </div>
                 ) : (
                     <div className="grid gap-8 md:gap-10">
-                        {/* Summary Stats */}
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-neutral-400">
-                                {totalBoards} total board{totalBoards !== 1 ? 's' : ''} ({totalActiveBoards} active, {totalArchivedBoards} archived) across {boardList.length + archivedBoardList.length} project{(boardList.length + archivedBoardList.length) !== 1 ? 's' : ''}
-                            </span>
-                        </div>
-
                         {/* Active Boards Section */}
                         {boardList.length > 0 && (
                             <div className="space-y-4">
