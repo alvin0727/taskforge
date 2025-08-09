@@ -84,10 +84,10 @@ async def login_user(user: user_request.LoginUser):
 async def verify_otp(verify_otp: user_request.VerifyOTP, response: Response):
     return await user_service.verify_otp(verify_otp.email, verify_otp.otp, response)
 
-# @router.post("/resend-otp")
-# async def resend_otp(email: str):
-#         await user_service.resend_otp(email)
-#         return {"message": "OTP resent successfully"}
+@router.post("/resend-otp")
+async def resend_otp(email: str):
+        await user_service.resend_otp(email)
+        return {"message": "OTP resent successfully"}
 
 
 @router.get("/me", response_model=UserWithMessage)

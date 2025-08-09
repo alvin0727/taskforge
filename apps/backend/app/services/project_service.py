@@ -385,7 +385,8 @@ class ProjectService:
         user_id: ObjectId,
         organization_id: ObjectId,
         status: Optional[ProjectStatus] = None,
-        limit: int = 20,
+        archived: Optional[bool] = False,
+        limit: int = 10,
         offset: int = 0
     ) -> Dict[str, Any]:
         """List projects in organization"""
@@ -397,9 +398,13 @@ class ProjectService:
             query = {
                 "organization_id": organization_id,
                 "members": user_id,  # User must be a member
-                "archived": False
             }
-
+            
+            if archived is not None:
+                query["archived"] = archived
+            else:
+                query["archived"] = False
+                
             if status:
                 query["status"] = status
 

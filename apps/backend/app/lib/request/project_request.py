@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict, Any
+from app.models.project import ProjectStatus
 
 
 class CreateProjectRequest(BaseModel):
@@ -19,3 +20,9 @@ class AddMemberRequest(BaseModel):
 class GetMemberRequest(BaseModel):
     project_slug: str
     organization_id: str
+    
+class ListProjectQueryRequest(BaseModel):
+    status: Optional[ProjectStatus] = None  # ProjectStatus enum value
+    archived: Optional[bool] = None
+    limit: Optional[int] = 10
+    offset: Optional[int] = 0

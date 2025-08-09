@@ -3,7 +3,9 @@ import {
     SidebarProject,
     RequestCreateProject,
     ProjectMember,
-    AddProjectMemberResponse
+    AddProjectMemberResponse,
+    ListProjectQueryRequest,
+    ListProjectsAPIResponse
 } from "@/lib/types/project";
 
 export async function getSideBarProject(orgId: string): Promise<{ projects: SidebarProject[], total: number }> {
@@ -27,9 +29,16 @@ export async function addMembersToProject(
     return response.data;
 }
 
+export async function listProjects(
+    organizationId: string,
+    query: ListProjectQueryRequest
+): Promise<ListProjectsAPIResponse> {
+    return await projectAdapter.listProjects(organizationId, query);
+}
 export default {
     getSideBarProject,
     createNewProject,
     getProjectMembers,
     addMembersToProject,
+    listProjects
 };

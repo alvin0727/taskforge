@@ -368,7 +368,7 @@ class OrganizationService:
             members = await db["users"].find({"_id": {"$in": member_ids}}).to_list(length=None)
             result = []
             for m in members:
-                # Cari info organisasi user
+                # Search for user's organization info
                 user_org_info = next(
                     (org for org in m.get("organizations", []) if org.get("organization_id") == org_id),
                     {}

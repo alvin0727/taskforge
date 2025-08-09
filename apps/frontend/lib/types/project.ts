@@ -48,3 +48,54 @@ export interface AddProjectMemberResponse {
         };
     };
 }
+
+enum ProjectStatus {
+    PLANNING = "planning",
+    ACTIVE = "active",
+    ON_HOLD = "on-hold",
+    COMPLETED = "completed",
+    CANCELLED = "cancelled"
+}
+
+export interface ListProjectQueryRequest {
+    status?: ProjectStatus;
+    archived?: boolean;
+    limit?: number;
+    offset?: number;
+}
+
+export interface ProjectStats {
+    total_tasks: number;
+    completed_tasks: number;
+    in_progress_tasks: number;
+    todo_tasks: number;
+    overdue_tasks: number;
+    completion_rate: number;
+}
+
+export interface ProjectListItem {
+    id: string;
+    name: string;
+    slug: string;
+    description?: string;
+    color?: string;
+    status: string;
+    owner_id: string;
+    members_count: number;
+    stats: ProjectStats;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ProjectListResponse {
+    projects: ProjectListItem[];
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+}
+
+export interface ListProjectsAPIResponse {
+    projects: ProjectListResponse;
+    total: number;
+}

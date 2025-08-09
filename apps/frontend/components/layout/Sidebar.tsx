@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import {
   Menu,
+  FolderKanban,
   X,
   Home,
   Kanban,
@@ -44,6 +45,7 @@ import toast from "react-hot-toast";
 
 const navLinks = [
   { name: "Dashboard", href: "/", icon: Home, iconColor: "text-blue-400" },
+  { name: "Project", href: "/project", icon: FolderKanban, iconColor: "text-purple-400" },
   { name: "Board", href: "/protected/board", icon: Kanban, iconColor: "text-purple-400" },
   { name: "Tasks", href: "/protected/task", icon: CheckSquare, iconColor: "text-green-400" },
   { name: "Team", href: "/team", icon: Users, iconColor: "text-pink-400" },
@@ -58,7 +60,7 @@ const quickActions = [
 
 const favorites = [
   { name: "Sprint Planning", href: "/protected/sprint", icon: Clock, iconColor: "text-yellow-400" },
-  { name: "Archived Projects", href: "/protected/archive", icon: Archive, iconColor: "text-gray-400" },
+  { name: "Archived Projects", href: "/project/archived", icon: Archive, iconColor: "text-gray-400" },
   { name: "Starred Items", href: "/protected/starred", icon: Star, iconColor: "text-amber-400" },
 ];
 

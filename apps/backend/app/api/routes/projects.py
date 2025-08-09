@@ -116,3 +116,29 @@ async def get_sidebar_projects(
         "projects": projects,
         "total": total,
     }
+
+
+@router.post("/{org_id}/list-projects")
+async def list_projects(
+    org_id: str,
+    query: project_request.ListProjectQueryRequest,
+    current_user=Depends(get_current_user),
+):
+    """List all projects for a specific organization"""
+    user_id = ObjectId(current_user["id"])
+    organization_id = ObjectId(org_id)
+
+    # Verify user access to the organization
+    await verify_user_access_to_organization(
+        current_user=user_id,
+        org_id=organization_id,
+        action="view"
+    )
+
+    projects = await project_service.list_projects(user_id, organization_id, query.status, query.archived, query.limit, query.offset)
+    total = len(projects)
+
+    return {
+        "projects": projects,
+        "total": total,
+    }
