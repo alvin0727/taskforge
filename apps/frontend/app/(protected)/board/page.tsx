@@ -199,14 +199,14 @@ export default function BoardPage() {
   // Drag & Drop sensors
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: {
-      delay: 100,
+      delay: 150,
       tolerance: 5,
     },
   });
 
   const touchSensor = useSensor(TouchSensor, {
     activationConstraint: {
-      delay: 100,
+      delay: 150,
       tolerance: 5,
     },
   });
