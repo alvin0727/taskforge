@@ -464,7 +464,6 @@ class BoardService:
                 task_data = {
                     "id": str(task["_id"]),
                     "title": task["title"],
-                    "description": task.get("description"),
                     "status": task["status"],
                     "priority": task["priority"],
                     "project_id": str(task["project_id"]) if task.get("project_id") else None,

@@ -5,6 +5,7 @@ import { BoardColumn } from '@/lib/types/board';
 interface TaskStore {
   tasks: Task[];
   tasksByColumn: Record<string, Task[]>;
+  taskDescriptions: Record<string, string>;
   setTasks: (tasks: Task[]) => void;
   setTasksByColumn: (tasksByColumn: Record<string, Task[]>) => void;
   clearTasks: () => void;
@@ -13,20 +14,37 @@ interface TaskStore {
   updateTaskPartial: (taskId: string, updates: Partial<Task>) => void;
   removeTask: (taskId: string) => void;
   addTask: (task: Task) => void;
+  setTaskDescription: (taskId: string, description: string) => void;
+  getTaskDescription: (taskId: string) => string;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   tasksByColumn: {},
+  taskDescriptions: {},
 
   setTasks: (tasks) => {
     // Group tasks by status/column
     const tasksByColumn: Record<string, Task[]> = {};
+    const taskDescriptions: Record<string, string> = {};
+
+    // Deduplicate tasks by id
+    const uniqueTasksMap: Record<string, Task> = {};
     tasks.forEach(task => {
+      uniqueTasksMap[task.id] = task;
+    });
+    const uniqueTasks = Object.values(uniqueTasksMap);
+
+    uniqueTasks.forEach(task => {
       if (!tasksByColumn[task.status]) {
         tasksByColumn[task.status] = [];
       }
       tasksByColumn[task.status].push(task);
+
+      // Store description separately
+      if (task.description) {
+        taskDescriptions[task.id] = task.description;
+      }
     });
 
     // Sort tasks by position within each column
@@ -34,12 +52,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       tasksByColumn[columnId].sort((a, b) => a.position - b.position);
     });
 
-    set({ tasks, tasksByColumn });
+    set({ tasks: uniqueTasks, tasksByColumn, taskDescriptions });
   },
 
   setTasksByColumn: (tasksByColumn) => set({ tasksByColumn }),
 
-  clearTasks: () => set({ tasks: [], tasksByColumn: {} }),
+  clearTasks: () => set({ tasks: [], tasksByColumn: {}, taskDescriptions: {} }),
 
   updateTaskStatus: (taskId, newStatus) => {
     const { tasks, tasksByColumn } = get();
@@ -90,9 +108,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
     set({ tasks: allTasks, tasksByColumn: newTasksByColumn });
   },
-  // New method for partial task updates
+
+  // Updated method for partial task updates with description handling
   updateTaskPartial: (taskId, updates) => {
-    const { tasks, tasksByColumn } = get();
+    const { tasks, tasksByColumn, taskDescriptions } = get();
 
     // Update the task in the tasks array
     const updatedTasks = tasks.map(task =>
@@ -107,11 +126,17 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       );
     });
 
-    set({ tasks: updatedTasks, tasksByColumn: newTasksByColumn });
+    // Update description if it's in updates
+    const newTaskDescriptions = { ...taskDescriptions };
+    if (updates.description !== undefined) {
+      newTaskDescriptions[taskId] = updates.description;
+    }
+
+    set({ tasks: updatedTasks, tasksByColumn: newTasksByColumn, taskDescriptions: newTaskDescriptions });
   },
 
   removeTask: (taskId) => {
-    const { tasks, tasksByColumn } = get();
+    const { tasks, tasksByColumn, taskDescriptions } = get();
 
     // Find task to remove
     const taskToRemove = tasks.find(task => task.id === taskId);
@@ -120,7 +145,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const columnId = taskToRemove.status;
 
     // Remove task from tasks array
-
     const updatedTasks = tasks
       .filter(task => task.id !== taskId)
       .map(task =>
@@ -138,10 +162,23 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
     const updatedTasksByColumn = { ...tasksByColumn, [columnId]: updatedColumnTasks };
 
-    set({ tasks: updatedTasks, tasksByColumn: updatedTasksByColumn });
+    // Remove description
+    const newTaskDescriptions = { ...taskDescriptions };
+    delete newTaskDescriptions[taskId];
+
+    set({
+      tasks: updatedTasks,
+      tasksByColumn: updatedTasksByColumn,
+      taskDescriptions: newTaskDescriptions
+    });
   },
+
   addTask: (task: Task) => {
-    const { tasks, tasksByColumn } = get();
+    const { tasks, tasksByColumn, taskDescriptions } = get();
+
+    if (tasks.some(t => t.id === task.id)) {
+      return;
+    }
 
     // Add task to tasks array
     const updatedTasks = [...tasks, task];
@@ -154,7 +191,31 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }));
     const updatedTasksByColumn = { ...tasksByColumn, [columnId]: updatedColumnTasks };
 
-    set({ tasks: updatedTasks, tasksByColumn: updatedTasksByColumn });
-  }
+    // Add description if exists
+    const newTaskDescriptions = { ...taskDescriptions };
+    if (task.description) {
+      newTaskDescriptions[task.id] = task.description;
+    }
 
+    set({
+      tasks: updatedTasks,
+      tasksByColumn: updatedTasksByColumn,
+      taskDescriptions: newTaskDescriptions
+    });
+  },
+
+  setTaskDescription: (taskId, description) => {
+    const { taskDescriptions } = get();
+    set({
+      taskDescriptions: {
+        ...taskDescriptions,
+        [taskId]: description
+      }
+    });
+  },
+
+  getTaskDescription: (taskId) => {
+    const { taskDescriptions } = get();
+    return taskDescriptions[taskId] || '';
+  }
 }));

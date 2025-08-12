@@ -154,14 +154,6 @@ function TaskCard({ task, isDragging = false, teamMembers }: Props) {
             </div>
           </div>
         </div>
-
-        {/* Description */}
-        {task.description && (
-          <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed mt-2">
-            {task.description}
-          </p>
-        )}
-
         {/* Labels */}
         <div className="flex flex-wrap gap-1 mt-2">
           <LabelsDropdown

@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import taskService from '@/services/task/taskService';
 import { useTaskStore } from '@/stores/taskStore';
 import { Task, TaskUpdateFields } from '@/lib/types/task';
@@ -15,6 +15,7 @@ import AssigneeDropdown from '@/components/ui/task/dropdowns/AssigneeDropdown';
 import DueDateDropdown from '@/components/ui/task/dropdowns/DueDateDropdown';
 import LabelsDropdown from '@/components/ui/task/dropdowns/LabelsDropdown';
 import EstimatedHoursInput from '@/components/ui/task/dropdowns/EstimatedHoursInput';
+import BlockEditor from '@/components/ui/task/editor/BlockEditor';
 
 export default function TaskDetailPage() {
     const searchParams = useSearchParams();
@@ -26,17 +27,23 @@ export default function TaskDetailPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [task, setTask] = useState<Task | null>(null);
 
-    const task: Task | undefined = useTaskStore((state) =>
-        state.tasks?.find((t: Task) => t.id === taskId)
-    );
+    // Local content state with debounced saving
+    const [taskContent, setTaskContent] = useState("");
+    const [contentInitialized, setContentInitialized] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSavedContentRef = useRef<string>("");
+
+    // Store functions
     const addTask = useTaskStore((state) => state.addTask);
     const removeTask = useTaskStore((state) => state.removeTask);
     const updateTaskPartial = useTaskStore((state) => state.updateTaskPartial);
-
+    const setTaskDescription = useTaskStore((state) => state.setTaskDescription);
     const teamMembers = useProjectTeamMembers(task?.project_id ?? undefined);
 
-    // Fetch task if not in store
+    // Fetch task directly from backend on first load
     useEffect(() => {
         const fetchTask = async () => {
             if (!taskId) {
@@ -49,13 +56,16 @@ export default function TaskDetailPage() {
                 setLoading(true);
                 setError(null);
 
-                if (!task) {
-                    const fetchedTask = await taskService.getTaskById(taskId);
-                    if (fetchedTask) {
-                        addTask(fetchedTask);
-                    } else {
-                        setError('Task not found');
-                    }
+                console.log('Fetching task from backend:', taskId);
+                const fetchedTask = await taskService.getTaskById(taskId);
+
+                if (fetchedTask) {
+                    console.log('Task fetched from backend:', fetchedTask);
+                    setTask(fetchedTask);
+                    // Add to store for future reference
+                    addTask(fetchedTask);
+                } else {
+                    setError('Task not found');
                 }
             } catch (err) {
                 setError('Failed to fetch task');
@@ -68,13 +78,139 @@ export default function TaskDetailPage() {
         fetchTask();
     }, [taskId, addTask]);
 
-    // Generic function to update task
+    // Initialize content when task loads from backend
+    useEffect(() => {
+        if (task && taskId && !contentInitialized) {
+            console.log('Initializing content for task:', task.id, 'Description:', task.description);
+
+            let initialContent = "";
+
+            // Use task.description directly from backend
+            if (task.description) {
+                initialContent = task.description;
+                // Store it in the store for future use
+                setTaskDescription(taskId, task.description);
+            }
+
+            // Validate if content is valid JSON blocks
+            if (initialContent) {
+                try {
+                    const parsed = JSON.parse(initialContent);
+                    if (Array.isArray(parsed)) {
+                        // Valid block structure
+                        console.log('Valid JSON blocks found:', parsed);
+                        setTaskContent(initialContent);
+                        lastSavedContentRef.current = initialContent;
+                    } else {
+                        // Invalid structure, convert to paragraph block
+                        console.log('Invalid block structure, converting to paragraph block');
+                        const paragraphBlock = [{
+                            id: Date.now().toString(),
+                            type: 'paragraph',
+                            content: initialContent,
+                            position: 0
+                        }];
+                        const blockContent = JSON.stringify(paragraphBlock);
+                        setTaskContent(blockContent);
+                        lastSavedContentRef.current = blockContent;
+                    }
+                } catch (e) {
+                    // Not JSON, convert to paragraph block
+                    console.log('Non-JSON content, converting to paragraph block:', e);
+                    const paragraphBlock = [{
+                        id: Date.now().toString(),
+                        type: 'paragraph',
+                        content: initialContent,
+                        position: 0
+                    }];
+                    const blockContent = JSON.stringify(paragraphBlock);
+                    setTaskContent(blockContent);
+                    lastSavedContentRef.current = blockContent;
+                }
+            } else {
+                // No content, start with empty
+                console.log('No content found, starting with empty editor');
+                setTaskContent("");
+                lastSavedContentRef.current = "";
+            }
+
+            setContentInitialized(true);
+        }
+    }, [task, taskId, contentInitialized, setTaskDescription]);
+
+    // Debounced save function
+    const debouncedSave = useCallback(async (content: string) => {
+        if (!task || !taskId || content === lastSavedContentRef.current || isSaving) return;
+
+        try {
+            setIsSaving(true);
+            console.log('Saving task description:', content);
+
+            // Update local task state first for immediate UI feedback
+            setTask(prev => prev ? { ...prev, description: content } : prev);
+            setTaskDescription(taskId, content);
+            updateTaskPartial(task.id, { description: content });
+
+            // Save to backend
+            await taskService.updateTaskPartial({
+                task_id: task.id,
+                updates: { description: content }
+            });
+
+            lastSavedContentRef.current = content;
+            console.log('Task description saved successfully');
+        } catch (error) {
+            console.error('Error saving task description:', error);
+            // Revert local change on error
+            const previousContent = lastSavedContentRef.current;
+            setTask(prev => prev ? { ...prev, description: previousContent } : prev);
+            setTaskDescription(taskId, previousContent);
+            updateTaskPartial(task.id, { description: previousContent });
+            setTaskContent(previousContent);
+            toast.error('Failed to save changes');
+        } finally {
+            setIsSaving(false);
+        }
+    }, [task, taskId, updateTaskPartial, setTaskDescription, isSaving]);
+
+    // Handle content change with debouncing
+    const handleContentChange = useCallback((newContent: string) => {
+        if (!contentInitialized) return;
+
+        console.log('Content changed:', newContent);
+        setTaskContent(newContent);
+
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Set new timeout for auto-save (2 seconds after user stops typing)
+        saveTimeoutRef.current = setTimeout(() => {
+            debouncedSave(newContent);
+        }, 2000);
+    }, [debouncedSave, contentInitialized]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Generic function to update task properties (not description)
     const updateTask = async (updates: Partial<TaskUpdateFields>) => {
         if (!task || isUpdating) return;
 
         try {
             setIsUpdating(true);
+
+            // Update local task state first
+            setTask(prev => prev ? { ...prev, ...updates, updated_at: new Date().toISOString() } : prev);
             updateTaskPartial(task.id, updates);
+
             await taskService.updateTaskPartial({
                 task_id: task.id,
                 updates
@@ -82,6 +218,17 @@ export default function TaskDetailPage() {
             toast.success('Task updated successfully');
         } catch (error) {
             console.error('Error updating task:', error);
+            // Revert local change on error
+            setTask(prev => {
+                if (!prev) return prev;
+                const revertedTask = { ...prev };
+                // Remove the failed updates
+                Object.keys(updates).forEach(key => {
+                    // This is a simple revert - in practice you might want to keep original values
+                    delete (revertedTask as any)[key];
+                });
+                return revertedTask;
+            });
             toast.error('Failed to update task');
         } finally {
             setIsUpdating(false);
@@ -137,10 +284,12 @@ export default function TaskDetailPage() {
 
     return (
         <div className="min-h-screen bg-neutral-900">
-            <div className="max-w-6xl mx-auto px-6 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="bg-neutral-800/50 rounded-lg p-6">
+            {/* Container dengan max-width yang lebih besar */}
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                <div className="grid grid-cols-1 gap-8">
+                    {/* Single column layout untuk lebih luas */}
+                    <div className="space-y-8">
+                        <div className="bg-neutral-800/50 rounded-lg p-8">
                             <div className="flex flex-col gap-4">
                                 {/* Title & Status */}
                                 <div className="flex items-center min-w-0 mb-2">
@@ -151,11 +300,17 @@ export default function TaskDetailPage() {
                                             {task.status.replace('-', ' ')}
                                         </span>
                                     </div>
+                                    {/* Save indicator */}
+                                    {isSaving && (
+                                        <div className="ml-2 flex items-center gap-1 text-xs text-neutral-400">
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b border-neutral-400" />
+                                            Saving...
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Properties using our reusable components */}
+                                {/* Properties */}
                                 <div className="flex items-center gap-1 flex-wrap mt-1">
-                                    {/* Labels */}
                                     <LabelsDropdown
                                         currentLabels={task.labels || []}
                                         onLabelsChange={(labelName) => {
@@ -169,7 +324,6 @@ export default function TaskDetailPage() {
                                         size="small"
                                     />
 
-                                    {/* Priority */}
                                     <PriorityDropdown
                                         currentPriority={task.priority}
                                         onPriorityChange={(priority) => {
@@ -181,7 +335,6 @@ export default function TaskDetailPage() {
                                         dropdownDirection="down"
                                     />
 
-                                    {/* Due Date */}
                                     <DueDateDropdown
                                         currentDueDate={task.due_date}
                                         onDueDateChange={(dueDate) => updateTask({ due_date: dueDate })}
@@ -191,7 +344,6 @@ export default function TaskDetailPage() {
                                         dropdownDirection="down"
                                     />
 
-                                    {/* Estimated Hours */}
                                     <EstimatedHoursInput
                                         currentHours={task.estimated_hours}
                                         onHoursChange={(hours) => updateTask({ estimated_hours: hours })}
@@ -199,7 +351,6 @@ export default function TaskDetailPage() {
                                         size="small"
                                     />
 
-                                    {/* Assignee */}
                                     <AssigneeDropdown
                                         currentAssigneeId={task.assignee_id}
                                         teamMembers={teamMembers}
@@ -210,7 +361,6 @@ export default function TaskDetailPage() {
                                         dropdownDirection="down"
                                     />
 
-                                    {/* Delete button */}
                                     <button
                                         onClick={handleDeleteTask}
                                         disabled={isDeleting}
@@ -225,36 +375,42 @@ export default function TaskDetailPage() {
                                         )}
                                     </button>
                                 </div>
+                            </div>
 
-                                {/* Description */}
-                                <div className="mt-4">
-                                    {task.description ? (
-                                        <div className="prose prose-neutral prose-invert max-w-none">
-                                            <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap text-sm">
-                                                {task.description}
-                                            </p>
+                            {/* Enhanced Task Description Editor dengan padding yang lebih besar */}
+                            <div className="bg-neutral-800/40 rounded-lg p-8 mt-8">
+                                <div className="mb-6 flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold text-neutral-100">Description</h3>
+                                </div>
+                                {/* Container dengan padding internal yang lebih besar */}
+                                <div className="px-4 py-2">
+                                    {contentInitialized && (
+                                        <BlockEditor
+                                            content={taskContent}
+                                            onChange={handleContentChange}
+                                            placeholder="Add ..."
+                                        />
+                                    )}
+                                    {!contentInitialized && (
+                                        <div className="animate-pulse bg-neutral-800/30 rounded h-20 flex items-center justify-center">
+                                            <span className="text-neutral-400 text-sm">Loading content...</span>
                                         </div>
-                                    ) : (
-                                        <p className="text-neutral-500 italic text-sm">
-                                            No description provided for this task.
-                                        </p>
                                     )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                {/* Delete Modal */}
-                <DeleteModal
-                    open={showDeleteModal}
-                    title="Delete Task"
-                    description="Are you sure you want to delete this task? This action cannot be undone."
-                    isLoading={isDeleting}
-                    onConfirm={confirmDeleteTask}
-                    onCancel={() => setShowDeleteModal(false)}
-                />
             </div>
+
+            <DeleteModal
+                open={showDeleteModal}
+                title="Delete Task"
+                description="Are you sure you want to delete this task? This action cannot be undone."
+                isLoading={isDeleting}
+                onConfirm={confirmDeleteTask}
+                onCancel={() => setShowDeleteModal(false)}
+            />
         </div>
     );
 }
