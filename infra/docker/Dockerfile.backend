@@ -1,13 +1,59 @@
-# Dockerfile.backend
+# ============================
+# Base Image
+# ============================
+# Use a lightweight Python image for faster builds and smaller size
 FROM python:3.11-slim
 
-WORKDIR /app
-
-COPY apps/backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY apps/backend/app ./app
-
+# ============================
+# Environment Variables
+# ============================
+# Prevent Python from writing .pyc files and enable unbuffered stdout/stderr
+ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# ============================
+# Working Directory
+# ============================
+# Set the working directory inside the container
+WORKDIR /app
+
+# ============================
+# System Dependencies
+# ============================
+# Install essential system packages (build tools, SSL, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# ============================
+# Python Dependencies
+# ============================
+# Copy only requirements first to leverage Docker cache
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ============================
+# Application Files
+# ============================
+# Copy the entire application code into the container
+COPY . .
+
+# ============================
+# Expose Port
+# ============================
+# FastAPI will run on port 8000
+EXPOSE 8000
+
+# ============================
+# Command
+# ============================
+# Run the application using Gunicorn with Uvicorn workers for better performance
+# -k: Worker class to use Uvicorn
+# --workers: Number of worker processes (adjust for CPU cores)
+# --timeout: Worker timeout in seconds
+# --bind: Bind to host:port
+CMD ["gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
