@@ -48,7 +48,6 @@ const navLinks = [
   { name: "Dashboard", href: "/", icon: Home, iconColor: "text-blue-400" },
   { name: "Project", href: "/project", icon: FolderKanban, iconColor: "text-purple-400" },
   { name: "Board", href: "/organization/board", icon: Kanban, iconColor: "text-purple-400" },
-  { name: "Tasks", href: "/protected/task", icon: CheckSquare, iconColor: "text-green-400" },
   { name: "Team", href: "/team", icon: Users, iconColor: "text-pink-400" },
   { name: "Calendar", href: "/protected/calendar", icon: Calendar, iconColor: "text-red-400" },
   { name: "Analytics", href: "/protected/analytics", icon: BarChart3, iconColor: "text-cyan-400" },

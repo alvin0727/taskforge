@@ -21,7 +21,6 @@ interface TaskFormProps {
 export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: TaskFormProps) {
   const [form, setForm] = useState<RequestTaskCreate>({
     title: "",
-    description: undefined,
     priority: undefined, // Make priority optional/undefined by default
     project_id: defaultValues?.project_id || "",
     board_id: defaultValues?.board_id || "",
@@ -155,7 +154,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
     // Handle number fields
     if (name === "estimated_hours") {
       setForm({ ...form, [name]: value ? Number(value) : undefined });
-    } else if (name === "description" || name === "assignee_id" || name === "due_date") {
+    } else if (name === "assignee_id" || name === "due_date") {
       setForm({ ...form, [name]: value ? value : undefined });
     } else {
       setForm({ ...form, [name]: value });
@@ -327,18 +326,6 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                 className="w-full px-0 py-2 bg-transparent text-neutral-100 placeholder-neutral-500 border-0 border-b border-transparent focus:border-blue-500/50 focus:outline-none text-lg font-medium transition-colors"
                 maxLength={200}
                 autoFocus
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <textarea
-                name="description"
-                value={form.description ?? ""}
-                onChange={handleChange}
-                placeholder="Add description..."
-                className="w-full px-0 py-2 bg-transparent text-neutral-300 placeholder-neutral-500 border-0 resize-none focus:outline-none text-sm"
-                rows={2}
               />
             </div>
 
