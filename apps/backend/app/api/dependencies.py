@@ -1,7 +1,5 @@
 from fastapi import Cookie, HTTPException, Response
 from app.utils.token_manager import verify_token, verify_refresh_token
-from app.utils.logger import logger
-
 
 async def get_current_user(auth_token: str = Cookie(None)):
     if not auth_token:
