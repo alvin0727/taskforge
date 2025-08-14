@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import { TaskPriority, RequestTaskCreate } from "@/lib/types/task";
 import { Plus, Calendar, User, Clock, Tag, X, ChevronDown, Signal, SignalHigh, SignalMedium, SignalLow, Minus } from "lucide-react";

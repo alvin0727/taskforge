@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Task } from '@/lib/types/task';
-import { BoardColumn } from '@/lib/types/board';
 
 interface TaskStore {
   tasks: Task[];

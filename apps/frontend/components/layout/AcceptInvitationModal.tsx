@@ -1,9 +1,10 @@
+"use client";
+
 import React, { useState } from "react";
 import { Dialog } from "@headlessui/react";
 import { FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
-import organizationService from "@/services/organization/organizationService";
 
 interface AcceptInvitationModalProps {
   open: boolean;
@@ -21,7 +22,6 @@ interface AcceptInvitationModalProps {
 export default function AcceptInvitationModal({
   open,
   onClose,
-  invitationToken,
   invitationInfo
 }: AcceptInvitationModalProps) {
   const [loading, setLoading] = useState(false);

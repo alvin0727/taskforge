@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { Building2, ChevronDown, CheckSquare, Plus, Settings } from "lucide-react";
 import { Organization } from "@/lib/types/organization";
 

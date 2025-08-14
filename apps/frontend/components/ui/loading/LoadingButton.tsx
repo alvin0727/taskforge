@@ -1,3 +1,5 @@
+"use client";
+
 import { ButtonHTMLAttributes } from "react";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 

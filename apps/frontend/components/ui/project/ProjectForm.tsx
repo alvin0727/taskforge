@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, Calendar, Palette, X, ChevronDown } from "lucide-react";
 import { useSidebarStore } from "@/stores/sidebarStore";

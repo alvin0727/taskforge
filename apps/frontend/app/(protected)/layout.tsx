@@ -1,3 +1,5 @@
+"use client";
+
 import AuthProvider from "./providers/AuthProvider";
 import Sidebar from "@/components/layout/Sidebar";
 

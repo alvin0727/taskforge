@@ -1,3 +1,5 @@
+"use client";
+
 import { UserCircle } from 'lucide-react';
 import { ProjectMember } from "@/lib/types/project";
 import { useOrganizationStore } from '@/stores/organizationStore';
