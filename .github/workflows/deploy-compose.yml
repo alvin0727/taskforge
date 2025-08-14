@@ -74,7 +74,7 @@ jobs:
 
       - name: Pull latest images and restart services (docker-compose)
         run: |
-          cd /home/ubuntu/yourproject
+          cd /home/ubuntu/taskforge
           docker-compose pull
           docker-compose up -d --remove-orphans --force-recreate
 
