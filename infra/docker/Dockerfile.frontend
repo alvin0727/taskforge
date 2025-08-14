@@ -5,7 +5,7 @@ FROM node:20-alpine AS deps
 
 WORKDIR /app
 
-# Copy only package.json and package-lock.json for better caching
+# Copy only package.json for better caching
 COPY package.json ./
 
 RUN npm install
