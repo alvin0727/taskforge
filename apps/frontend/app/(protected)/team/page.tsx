@@ -7,7 +7,7 @@ import { ProjectMember } from "@/lib/types/project";
 import { OrganizationMember } from "@/lib/types/organization";
 import projectService from "@/services/projects/projectService";
 import organizationService from "@/services/organization/organizationService";
-import Loading from "@/components/layout/Loading";
+import Loading from "@/components/layout/LoadingPage";
 import {
     Users,
     Mail,

@@ -30,7 +30,7 @@ import { Board, BoardColumn } from "@/lib/types/board";
 import { Task } from "@/lib/types/task";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import TaskCard from "@/components/ui/task/TaskCard";
-import Loading from "@/components/layout/Loading";
+import Loading from "@/components/layout/LoadingPage";
 import TaskForm from "@/components/ui/task/TaskForm";
 import { RequestTaskCreate, TaskPriority } from "@/lib/types/task";
 import { useProjectTeamMembers } from '@/components/ui/team/TeamUtils';

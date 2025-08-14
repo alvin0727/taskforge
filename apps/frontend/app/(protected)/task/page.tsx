@@ -8,7 +8,7 @@ import { useTaskStore } from '@/stores/taskStore';
 import { Task, TaskUpdateFields } from '@/lib/types/task';
 import { useProjectTeamMembers } from '@/components/ui/team/TeamUtils';
 import toast from 'react-hot-toast';
-import Loading from '@/components/layout/Loading';
+import Loading from '@/components/layout/LoadingPage';
 import DeleteModal from '@/components/ui/task/properties/DeleteModal';
 import PriorityDropdown from '@/components/ui/task/dropdowns/PriorityDropdown';
 import AssigneeDropdown from '@/components/ui/task/dropdowns/AssigneeDropdown';

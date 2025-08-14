@@ -7,7 +7,7 @@ import { Archive, Calendar, Folder, CheckCircle, Clock, AlertCircle, BarChart3 }
 import projectService from "@/services/projects/projectService"
 import { getAxiosErrorMessage } from "@/utils/errorMessage"
 import toast from "react-hot-toast"
-import Loading from "@/components/layout/Loading"
+import Loading from "@/components/layout/LoadingPage"
 
 export default function ArchivedProjectPage() {
     const activeOrg = useOrganizationStore((state) => state.activeOrg)

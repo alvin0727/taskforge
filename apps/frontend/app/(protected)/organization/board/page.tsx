@@ -7,7 +7,7 @@ import { Kanban, Calendar, Folder, CheckCircle, Clock, AlertCircle, BarChart3, L
 import boardService from "@/services/board/boardService"
 import { getAxiosErrorMessage } from "@/utils/errorMessage"
 import toast from "react-hot-toast"
-import Loading from '@/components/layout/Loading'
+import Loading from '@/components/layout/LoadingPage'
 
 export default function ActiveBoardsPage() {
     const activeOrg = useOrganizationStore((state) => state.activeOrg)
