@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import {
   DndContext,
   useDroppable,
@@ -119,7 +119,7 @@ function SortableTaskCard({ task, teamMembers }: { task: Task, teamMembers: Proj
   );
 }
 
-export default function BoardPage() {
+function BoardPageInner() {
   const searchParams = useSearchParams();
   const projectId = searchParams.get("project");
 
@@ -639,5 +639,13 @@ export default function BoardPage() {
         ) : null}
       </DragOverlay>
     </DndContext>
+  );
+}
+
+export default function BoardPage() {
+  return (
+    <Suspense fallback={null}>
+      <BoardPageInner />
+    </Suspense>
   );
 }

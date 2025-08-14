@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HiCheckCircle, HiXCircle } from "react-icons/hi2";
 import LoadingButton from "@/components/ui/loading/LoadingButton";
 import userService from "@/services/users/userService";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
 
-export default function VerifyEmailPage() {
+function VerifyEmailPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
@@ -72,5 +72,13 @@ export default function VerifyEmailPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function VerifyEmailPage() {
+    return (
+        <Suspense fallback={null}>
+            <VerifyEmailPageInner />
+        </Suspense>
     );
 }

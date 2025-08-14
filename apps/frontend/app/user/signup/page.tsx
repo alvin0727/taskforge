@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HiUserPlus, HiUser, HiLockClosed, HiBuildingOffice2, HiUserGroup } from "react-icons/hi2";
@@ -12,17 +12,18 @@ import toast from "react-hot-toast";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
 import { InvitationInfo } from "@/lib/types/organization";
 
-export default function SignupPage() {
+
+function SignupPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const invitationToken = searchParams.get('token');
-    
+
     // Determine signup type based on URL params
     const [signupType, setSignupType] = useState(() => {
         if (invitationToken) return 'invitation';
         return 'personal'; // Default to personal
     });
-    
+
     const [form, setForm] = useState({
         email: "",
         name: "",
@@ -30,14 +31,14 @@ export default function SignupPage() {
         organizationName: "",
         organizationDescription: "",
     });
-    
+
     const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
-        
+
         async function checkAuthenticated() {
             try {
                 const profile = await userService.getProfile();
@@ -48,7 +49,7 @@ export default function SignupPage() {
                 // Not authenticated, continue with signup
             }
         }
-        
+
         // If there's an invitation token, validate it
         async function validateInvitation() {
             if (invitationToken && isMounted) {
@@ -63,10 +64,10 @@ export default function SignupPage() {
                 }
             }
         }
-        
+
         checkAuthenticated();
         validateInvitation();
-        
+
         return () => { isMounted = false; };
     }, [router, invitationToken]);
 
@@ -107,14 +108,14 @@ export default function SignupPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        
+
         if (!validateForm()) return;
-        
+
         setLoading(true);
-        
+
         try {
             let result;
-            
+
             switch (signupType) {
                 case 'personal':
                     result = await userService.signupPersonal({
@@ -123,7 +124,7 @@ export default function SignupPage() {
                         password: form.password
                     });
                     break;
-                    
+
                 case 'team':
                     result = await userService.signupTeam({
                         email: form.email,
@@ -133,7 +134,7 @@ export default function SignupPage() {
                         organization_description: form.organizationDescription
                     });
                     break;
-                    
+
                 case 'invitation':
                     result = await userService.signupWithInvitation({
                         email: form.email,
@@ -143,7 +144,7 @@ export default function SignupPage() {
                     });
                     break;
             }
-            
+
             // Redirect to verification pending page or login
             let message = "Please check your email for verification";
             if (signupType === "personal") {
@@ -156,7 +157,7 @@ export default function SignupPage() {
                     : "Successfully joined organization! Please check your email for verification.";
             }
             router.push(`/user/login?message=${encodeURIComponent(message)}`);
-            
+
         } catch (err) {
             const errorMsg = getAxiosErrorMessage(err);
             setError(errorMsg);
@@ -238,25 +239,23 @@ export default function SignupPage() {
                             <button
                                 type="button"
                                 onClick={() => handleSignupTypeChange('personal')}
-                                className={`p-4 rounded-lg border text-left transition-all ${
-                                    signupType === 'personal'
-                                        ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                                        : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
-                                }`}
+                                className={`p-4 rounded-lg border text-left transition-all ${signupType === 'personal'
+                                    ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                                    : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
+                                    }`}
                             >
                                 <HiUser className="mb-2" size={20} />
                                 <div className="text-sm font-medium">Personal</div>
                                 <div className="text-xs opacity-80">Individual workspace</div>
                             </button>
-                            
+
                             <button
                                 type="button"
                                 onClick={() => handleSignupTypeChange('team')}
-                                className={`p-4 rounded-lg border text-left transition-all ${
-                                    signupType === 'team'
-                                        ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                                        : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
-                                }`}
+                                className={`p-4 rounded-lg border text-left transition-all ${signupType === 'team'
+                                    ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                                    : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
+                                    }`}
                             >
                                 <HiBuildingOffice2 className="mb-2" size={20} />
                                 <div className="text-sm font-medium">Team</div>
@@ -304,9 +303,8 @@ export default function SignupPage() {
                                 onChange={handleChange}
                                 disabled={!!invitationInfo} // Disable if invitation
                                 required
-                                className={`w-full pl-10 pr-4 py-3 rounded-lg border bg-neutral-800 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all ${
-                                    invitationInfo ? 'border-neutral-600 opacity-75' : 'border-neutral-700'
-                                }`}
+                                className={`w-full pl-10 pr-4 py-3 rounded-lg border bg-neutral-800 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all ${invitationInfo ? 'border-neutral-600 opacity-75' : 'border-neutral-700'
+                                    }`}
                                 placeholder="you@company.com"
                             />
                         </div>
@@ -427,7 +425,7 @@ export default function SignupPage() {
                                 {signupType === 'team' ? 'Team collaboration ready' : 'Start managing projects instantly'}
                             </h4>
                             <p className="text-neutral-400 text-xs">
-                                {signupType === 'team' 
+                                {signupType === 'team'
                                     ? 'Invite team members, assign roles, and collaborate on projects from day one.'
                                     : 'Get access to boards, tasks, workflows, and team collaboration tools.'
                                 }
@@ -437,5 +435,13 @@ export default function SignupPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function SignupPage() {
+    return (
+        <Suspense fallback={null}>
+            <SignupPageInner />
+        </Suspense>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Calendar,
@@ -22,11 +22,6 @@ import { InvitationInfo } from "@/lib/types/organization";
 import organizationService from "@/services/organization/organizationService";
 import toast from "react-hot-toast";
 
-const mockUser = {
-  name: "Sarah Chen",
-  avatar: "SC",
-  role: "Product Manager"
-};
 
 const mockStats = {
   totalTasks: 24,
@@ -65,7 +60,7 @@ const mockActivity = [
   { id: 4, user: "Sarah Chen", action: "assigned", item: "Performance task to Alex", time: "1 day ago", avatar: "SC" },
 ];
 
-export default function Dashboard() {
+function DashboardInner() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
   const searchParams = useSearchParams();
@@ -357,5 +352,15 @@ export default function Dashboard() {
         invitationInfo={invitationInfo ?? undefined}
       />
     </>
+  );
+}
+
+
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardInner />
+    </Suspense>
   );
 }

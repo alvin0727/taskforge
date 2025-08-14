@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import taskService from '@/services/task/taskService';
 import { useTaskStore } from '@/stores/taskStore';
 import { Task, TaskUpdateFields } from '@/lib/types/task';
@@ -17,7 +17,7 @@ import LabelsDropdown from '@/components/ui/task/dropdowns/LabelsDropdown';
 import EstimatedHoursInput from '@/components/ui/task/dropdowns/EstimatedHoursInput';
 import BlockEditor from '@/components/ui/task/editor/BlockEditor';
 
-export default function TaskDetailPage() {
+function TaskDetailPageInner() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const taskId = searchParams.get("task_id");
@@ -412,5 +412,13 @@ export default function TaskDetailPage() {
                 onCancel={() => setShowDeleteModal(false)}
             />
         </div>
+    );
+}
+
+export default function TaskDetailPage() {
+    return (
+        <Suspense fallback={null}>
+            <TaskDetailPageInner />
+        </Suspense>
     );
 }
