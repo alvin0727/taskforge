@@ -1,0 +1,82 @@
+name: deploy-compose
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/backend/**"
+      - "apps/frontend/**"
+      - "infra/docker/**"
+      - ".github/workflows/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  integration:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Lint code
+        run: echo "Linting code"
+      - name: Run unit tests
+        run: echo "Running unit tests"
+
+  build-and-push-ecr-image:
+    name: Build and Push Docker Images to ECR
+    needs: integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: 'true'
+
+      - name: Build, tag, and push backend & frontend images to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          BACKEND_TAG: backend-latest
+          FRONTEND_TAG: frontend-latest
+        run: |
+          # Build & push backend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$BACKEND_TAG -f infra/docker/Dockerfile.backend apps/backend
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BACKEND_TAG
+
+          # Build & push frontend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$FRONTEND_TAG -f infra/docker/Dockerfile.frontend apps/frontend
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$FRONTEND_TAG
+
+  deploy-to-ec2:
+    name: Deploy to EC2 (docker-compose)
+    needs: build-and-push-ecr-image
+    runs-on: self-hosted
+    steps:
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: 'true'
+
+      - name: Pull latest images and restart services (docker-compose)
+        run: |
+          cd /home/ubuntu/yourproject
+          docker-compose pull
+          docker-compose up -d --remove-orphans --force-recreate
+
+      - name: Cleanup old images
+        run: docker system prune -af

@@ -1,13 +1,39 @@
-# Dockerfile.frontend
-FROM node:20-alpine
+# ============================
+# Base Image for Dependencies
+# ============================
+FROM node:20-alpine AS deps
 
 WORKDIR /app
 
-COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install
+# Copy only package.json and package-lock.json for better caching
+COPY apps/frontend/package.json apps/frontend/package-lock.json ./
 
+RUN npm ci
+
+# ============================
+# Builder Image
+# ============================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY apps/frontend ./
+
+RUN npm run build
+
+# ============================
+# Production Image
+# ============================
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
 
-CMD ["pnpm", "dev"]
+CMD ["npm", "start"]

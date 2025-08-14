@@ -38,3 +38,5 @@ coverage/
 
 # TaskForge specific files
 flow.md
+
+infra/server/*
