@@ -2,7 +2,7 @@
 
 import UserService from "@/services/users/userService";
 import toast from "react-hot-toast";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { HiLockClosed, HiShieldCheck } from "react-icons/hi2";
 import { HiMail } from "react-icons/hi";
@@ -12,7 +12,7 @@ import { getAxiosErrorMessage } from "@/utils/errorMessage";
 import userService from "@/services/users/userService";
 import { useSearchParams } from "next/navigation";
 
-export default function Login() {
+function LoginInner() {
     const router = useRouter();
 
     const searchParams = useSearchParams();
@@ -319,5 +319,13 @@ export default function Login() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function Login() {
+       return (
+        <Suspense fallback={null}>
+            <LoginInner />
+        </Suspense>
     );
 }
