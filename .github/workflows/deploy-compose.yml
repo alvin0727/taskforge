@@ -53,13 +53,18 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           BACKEND_TAG: backend-latest
           FRONTEND_TAG: frontend-latest
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
         run: |
           # Build & push backend
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$BACKEND_TAG -f infra/docker/Dockerfile.backend apps/backend
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BACKEND_TAG
 
-          # Build & push frontend
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$FRONTEND_TAG -f infra/docker/Dockerfile.frontend apps/frontend
+          # Build & push frontend, passing all NEXT_PUBLIC_* secrets as build-arg
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$FRONTEND_TAG \
+            -f infra/docker/Dockerfile.frontend apps/frontend
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$FRONTEND_TAG
 
   deploy-to-ec2:
