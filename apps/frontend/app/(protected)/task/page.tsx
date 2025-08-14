@@ -264,7 +264,7 @@ function TaskDetailPageInner() {
     // Error state
     if (error || !task) {
         return (
-            <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
+            <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-4">
                 <div className="text-center space-y-6 max-w-md">
                     <DeleteModal
                         open={true}
@@ -283,34 +283,39 @@ function TaskDetailPageInner() {
     }
 
     return (
-        <div className="min-h-screen bg-neutral-900">
-            {/* Container dengan max-width yang lebih besar */}
-            <div className="max-w-7xl mx-auto px-6 py-8">
-                <div className="grid grid-cols-1 gap-8">
-                    {/* Single column layout untuk lebih luas */}
-                    <div className="space-y-8">
-                        <div className="bg-neutral-800/50 rounded-lg p-8">
+        <div className="min-h-screen bg-neutral-900 pt-16 sm:pt-2">
+            {/* Responsive container with better mobile padding */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+                <div className="grid grid-cols-1 gap-4 sm:gap-8">
+                    <div className="space-y-4 sm:space-y-8">
+                        <div className="bg-neutral-800/50 rounded-lg p-4 sm:p-6 lg:p-8">
                             <div className="flex flex-col gap-4">
-                                {/* Title & Status */}
-                                <div className="flex items-center min-w-0 mb-2">
-                                    <div className="w-1 h-5 bg-blue-500 rounded-full mr-2" />
-                                    <h1 className="text-2xl font-bold text-neutral-100 truncate">{task.title}</h1>
-                                    <div className="ml-2 px-2 py-0.5 rounded bg-neutral-700/30 text-xs">
-                                        <span className="text-neutral-300 capitalize">
-                                            {task.status.replace('-', ' ')}
-                                        </span>
-                                    </div>
-                                    {/* Save indicator */}
-                                    {isSaving && (
-                                        <div className="ml-2 flex items-center gap-1 text-xs text-neutral-400">
-                                            <div className="animate-spin rounded-full h-3 w-3 border-b border-neutral-400" />
-                                            Saving...
+                                {/* Title & Status - Mobile responsive */}
+                                <div className="flex items-start min-w-0 mb-2">
+                                    <div className="w-1 h-5 bg-blue-500 rounded-full mr-2 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <h1 className="text-xl sm:text-2xl font-bold text-neutral-100 break-words">
+                                            {task.title}
+                                        </h1>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <div className="px-2 py-0.5 rounded bg-neutral-700/30 text-xs">
+                                                <span className="text-neutral-300 capitalize">
+                                                    {task.status.replace('-', ' ')}
+                                                </span>
+                                            </div>
+                                            {/* Save indicator */}
+                                            {isSaving && (
+                                                <div className="flex items-center gap-1 text-xs text-neutral-400">
+                                                    <div className="animate-spin rounded-full h-3 w-3 border-b border-neutral-400" />
+                                                    <span className="hidden sm:inline">Saving...</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
 
-                                {/* Properties */}
-                                <div className="flex items-center gap-1 flex-wrap mt-1">
+                                {/* Properties - Mobile responsive layout */}
+                                <div className="flex flex-wrap gap-2 mt-1">
                                     <LabelsDropdown
                                         currentLabels={task.labels || []}
                                         onLabelsChange={(labelName) => {
@@ -361,29 +366,31 @@ function TaskDetailPageInner() {
                                         dropdownDirection="down"
                                     />
 
-                                    <button
-                                        onClick={handleDeleteTask}
-                                        disabled={isDeleting}
-                                        className="ml-auto p-1 bg-red-900/20 text-red-400 hover:bg-red-900/30 rounded transition-colors disabled:opacity-50 text-xs"
-                                    >
-                                        {isDeleting ? (
-                                            <div className="animate-spin rounded-full h-3 w-3 border-b border-red-400" />
-                                        ) : (
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        )}
-                                    </button>
+                                    <div className="flex-1 sm:flex-none flex justify-end">
+                                        <button
+                                            onClick={handleDeleteTask}
+                                            disabled={isDeleting}
+                                            className="p-1.5 sm:p-1 bg-red-900/20 text-red-400 hover:bg-red-900/30 rounded transition-colors disabled:opacity-50 text-xs"
+                                        >
+                                            {isDeleting ? (
+                                                <div className="animate-spin rounded-full h-3 w-3 border-b border-red-400" />
+                                            ) : (
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Enhanced Task Description Editor dengan padding yang lebih besar */}
-                            <div className="bg-neutral-800/40 rounded-lg p-8 mt-8">
-                                <div className="mb-6 flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold text-neutral-100">Description</h3>
+                            {/* Enhanced Task Description Editor - Mobile responsive */}
+                            <div className="bg-neutral-800/40 rounded-lg p-4 sm:p-6 lg:p-8 mt-4 sm:mt-8">
+                                <div className="mb-4 sm:mb-6 flex items-center justify-between">
+                                    <h3 className="text-base sm:text-lg font-semibold text-neutral-100">Description</h3>
                                 </div>
-                                {/* Container dengan padding internal yang lebih besar */}
-                                <div className="px-4 py-2">
+                                {/* Container responsive padding */}
+                                <div className="px-0 sm:px-2 lg:px-4 py-2">
                                     {contentInitialized && (
                                         <BlockEditor
                                             content={taskContent}

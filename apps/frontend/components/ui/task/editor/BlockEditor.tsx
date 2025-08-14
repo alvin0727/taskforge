@@ -97,10 +97,10 @@ const BlockMenu: React.FC<BlockMenuProps> = ({ isOpen, onClose, onSelectType, po
     return (
         <div
             ref={menuRef}
-            className="fixed z-50 bg-neutral-800 rounded-lg shadow-lg border border-neutral-700 w-80 max-h-80 overflow-y-auto"
+            className="fixed z-50 bg-neutral-800 rounded-lg shadow-lg border border-neutral-700 w-72 sm:w-80 max-h-80 overflow-y-auto"
             style={{
-                left: position.x,
-                top: position.y,
+                left: Math.min(position.x, window.innerWidth - 320), // Prevent overflow on small screens
+                top: Math.min(position.y, window.innerHeight - 320),
                 transform: 'translateY(-10px)'
             }}
         >
@@ -164,6 +164,18 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
     const [localContent, setLocalContent] = useState(block.content);
     const [isContentInitialized, setIsContentInitialized] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -193,19 +205,19 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
 
         switch (type) {
             case 'heading1':
-                return `${baseStyles} text-3xl font-bold text-neutral-100`;
+                return `${baseStyles} text-2xl sm:text-3xl font-bold text-neutral-100`;
             case 'heading2':
-                return `${baseStyles} text-2xl font-bold text-neutral-100`;
+                return `${baseStyles} text-xl sm:text-2xl font-bold text-neutral-100`;
             case 'heading3':
-                return `${baseStyles} text-xl font-bold text-neutral-100`;
+                return `${baseStyles} text-lg sm:text-xl font-bold text-neutral-100`;
             case 'quote':
-                return `${baseStyles} border-l-4 border-neutral-600 pl-4 italic`;
+                return `${baseStyles} border-l-4 border-neutral-600 pl-3 sm:pl-4 italic`;
             case 'code':
-                return `${baseStyles} font-mono text-sm bg-neutral-800/50 p-3 rounded text-neutral-200`;
+                return `${baseStyles} font-mono text-sm bg-neutral-800/50 p-2 sm:p-3 rounded text-neutral-200`;
             case 'bulletList':
-                return `${baseStyles} pl-6 relative`;
+                return `${baseStyles} pl-5 sm:pl-6 relative`;
             case 'numberedList':
-                return `${baseStyles} pl-6 relative`;
+                return `${baseStyles} pl-5 sm:pl-6 relative`;
             default:
                 return baseStyles;
         }
@@ -238,11 +250,11 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
 
         switch (type) {
             case 'heading1':
-                return `${baseStyle} text-3xl font-bold`;
+                return `${baseStyle} text-2xl sm:text-3xl font-bold`;
             case 'heading2':
-                return `${baseStyle} text-2xl font-bold`;
+                return `${baseStyle} text-xl sm:text-2xl font-bold`;
             case 'heading3':
-                return `${baseStyle} text-xl font-bold`;
+                return `${baseStyle} text-lg sm:text-xl font-bold`;
             case 'quote':
                 return `${baseStyle} italic`;
             case 'code':
@@ -296,27 +308,31 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group relative transition-shadow duration-150 `}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            className={`group relative transition-shadow duration-150`}
+            onMouseEnter={() => !isMobile && setIsHovered(true)}
+            onMouseLeave={() => !isMobile && setIsHovered(false)}
         >
-            <div className="flex items-start gap-2 py-2 m-4">
-                {/* Left Controls */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 -ml-14 pt-1">
+            <div className="flex items-start gap-1 sm:gap-2 py-2 mx-2 sm:mx-4">
+                {/* Left Controls - Hidden on mobile unless hovered/active */}
+                <div className={`flex items-center gap-1 transition-opacity duration-200 pt-1 ${
+                    isMobile 
+                        ? (isActive ? 'opacity-100' : 'opacity-0') 
+                        : 'opacity-0 group-hover:opacity-100'
+                } ${isMobile ? '-ml-6 sm:-ml-14' : '-ml-14'}`}>
                     <button
                         onClick={(e) => onPlusClick(block.id, e)}
-                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-neutral-700 text-neutral-400 hover:text-neutral-300 transition-colors"
+                        className="w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center rounded-md hover:bg-neutral-700 text-neutral-400 hover:text-neutral-300 transition-colors"
                         title="Add block"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
                     <button
                         {...attributes}
                         {...listeners}
-                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-neutral-700 text-neutral-400 hover:text-neutral-300 cursor-grab active:cursor-grabbing transition-colors"
+                        className="w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center rounded-md hover:bg-neutral-700 text-neutral-400 hover:text-neutral-300 cursor-grab active:cursor-grabbing transition-colors"
                         title="Drag to reorder"
                     >
-                        <GripVertical className="w-4 h-4" />
+                        <GripVertical className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
                 </div>
 
@@ -324,10 +340,10 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                 <div className={`flex-1 min-w-0 relative rounded-sm ${isActive ? 'bg-neutral-700/40' : ''}`}>
                     <div ref={blockRef} className="relative">
                         {block.type === 'bulletList' && localContent && (
-                            <div className="absolute left-2 top-3 w-1.5 h-1.5 bg-neutral-400 rounded-full"></div>
+                            <div className="absolute left-1.5 sm:left-2 top-3 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-neutral-400 rounded-full"></div>
                         )}
                         {block.type === 'numberedList' && localContent && (
-                            <div className="absolute left-1 top-2 text-sm text-neutral-500 font-medium">
+                            <div className="absolute left-0.5 sm:left-1 top-2 text-xs sm:text-sm text-neutral-500 font-medium">
                                 {numberedListCount}.
                             </div>
                         )}
@@ -345,7 +361,9 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                                 minHeight: block.type === 'code' ? '60px' : '32px',
                                 direction: 'ltr',
                                 textAlign: 'left',
-                                paddingRight: '36px', // Space for delete button
+                                paddingRight: isMobile ? '32px' : '36px', // Space for delete button
+                                wordWrap: 'break-word',
+                                overflowWrap: 'break-word',
                             }}
                         />
 
@@ -354,10 +372,10 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                             <div
                                 className={getPlaceholderStyles(block.type)}
                                 style={{
-                                    paddingLeft: block.type === 'quote' ? '1rem' :
-                                        block.type === 'bulletList' || block.type === 'numberedList' ? '1.5rem' : '0',
-                                    paddingTop: block.type === 'code' ? '0.75rem' : '0',
-                                    paddingRight: '36px', // Space for delete button
+                                    paddingLeft: block.type === 'quote' ? (isMobile ? '0.75rem' : '1rem') :
+                                        block.type === 'bulletList' || block.type === 'numberedList' ? (isMobile ? '1.25rem' : '1.5rem') : '0',
+                                    paddingTop: block.type === 'code' ? (isMobile ? '0.5rem' : '0.75rem') : '0',
+                                    paddingRight: isMobile ? '32px' : '36px', // Space for delete button
                                 }}
                             >
                                 {getPlaceholder(block.type)}
@@ -370,16 +388,19 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                 <div className="flex items-center pt-1">
                     <button
                         onClick={handleDeleteClick}
-                        className={`w-6 h-6 flex items-center justify-center rounded-md transition-all duration-200 ${isOnlyBlock
-                            ? 'opacity-20 cursor-not-allowed text-neutral-600'
-                            : isHovered || isActive
-                                ? 'opacity-100 hover:bg-red-900/20 text-red-400 hover:text-red-300'
-                                : 'opacity-0 group-hover:opacity-60 text-neutral-400 hover:text-red-400 hover:bg-red-900/20'
-                            }`}
+                        className={`w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-md transition-all duration-200 ${
+                            isOnlyBlock
+                                ? 'opacity-20 cursor-not-allowed text-neutral-600'
+                                : isMobile
+                                    ? (isActive ? 'opacity-100 hover:bg-red-900/20 text-red-400 hover:text-red-300' : 'opacity-0')
+                                    : (isHovered || isActive
+                                        ? 'opacity-100 hover:bg-red-900/20 text-red-400 hover:text-red-300'
+                                        : 'opacity-0 group-hover:opacity-60 text-neutral-400 hover:text-red-400 hover:bg-red-900/20')
+                        }`}
                         title={isOnlyBlock ? "Cannot delete the last block" : "Delete block"}
                         disabled={isOnlyBlock}
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
                 </div>
             </div>
@@ -405,6 +426,18 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
     const [menuTriggerBlockId, setMenuTriggerBlockId] = useState<string>('');
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -615,20 +648,30 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                 e.preventDefault();
                 const element = e.target as HTMLElement;
                 const rect = element.getBoundingClientRect();
-                setMenuPosition({ x: rect.left, y: rect.bottom });
+                
+                // Adjust menu position for mobile
+                const menuX = isMobile ? Math.max(10, rect.left) : rect.left;
+                const menuY = isMobile ? Math.max(10, rect.bottom + 5) : rect.bottom;
+                
+                setMenuPosition({ x: menuX, y: menuY });
                 setMenuTriggerBlockId(blockId); // Set trigger block ID
                 setShowBlockMenu(true);
             }
         }
-    }, [blocks, addBlock, deleteBlock]);
+    }, [blocks, addBlock, deleteBlock, isMobile]);
 
     const handlePlusClick = useCallback((blockId: string, event: React.MouseEvent) => {
         const rect = (event.target as HTMLElement).getBoundingClientRect();
-        setMenuPosition({ x: rect.right + 10, y: rect.top });
+        
+        // Adjust menu position for mobile
+        const menuX = isMobile ? Math.max(10, rect.left) : rect.right + 10;
+        const menuY = isMobile ? Math.max(10, rect.top) : rect.top;
+        
+        setMenuPosition({ x: menuX, y: menuY });
         setActiveBlockId(blockId);
         setMenuTriggerBlockId(blockId); // Set trigger block ID
         setShowBlockMenu(true);
-    }, []);
+    }, [isMobile]);
 
     const handleDeleteClick = useCallback((blockId: string) => {
         if (blocks.length > 1) {
@@ -703,7 +746,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                     <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
                         {blocks
                             .sort((a, b) => a.position - b.position)
@@ -733,13 +776,13 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                 triggerBlockId={menuTriggerBlockId}
             />
 
-            {/* Add block button at the end */}
-            <div className="mt-6">
+            {/* Add block button at the end - Mobile responsive */}
+            <div className="mt-4 sm:mt-6">
                 <button
                     onClick={() => addBlock()}
-                    className="flex items-center gap-2 text-neutral-400 hover:text-neutral-300 transition-colors py-2"
+                    className="flex items-center gap-2 text-neutral-400 hover:text-neutral-300 transition-colors py-2 px-2 sm:px-0"
                 >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="text-sm">{placeholder}</span>
                 </button>
             </div>
