@@ -492,7 +492,6 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                 }];
             }
 
-            console.log('Initializing blocks:', initialBlocks); // Debug log
             setBlocks(initialBlocks);
 
             if (initialBlocks.length > 0) {
@@ -523,7 +522,6 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                     const newBlocksStr = JSON.stringify(validatedBlocks);
 
                     if (currentBlocksStr !== newBlocksStr) {
-                        console.log('Content changed from outside, updating blocks:', validatedBlocks);
                         setBlocks(validatedBlocks.sort((a, b) => a.position - b.position));
                     }
                 }
@@ -546,7 +544,6 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
         // Debounce the onChange call
         emitChangeRef.current = setTimeout(() => {
             const serializedContent = JSON.stringify(updatedBlocks);
-            console.log('Emitting change:', serializedContent); // Debug log
             onChange(serializedContent);
         }, 100);
     }, [onChange]);

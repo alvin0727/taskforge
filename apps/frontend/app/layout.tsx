@@ -16,7 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "TaskForge - Workspace Management",
   description: "TaskForge is a full-stack task management and project collaboration platform built with TypeScript and Python that streamlines workflow automation and team productivity.",
-};  
+  icons: [
+    { rel: "icon", url: "/favicon.ico" }
+  ],
+};
 
 export default function RootLayout({
   children,

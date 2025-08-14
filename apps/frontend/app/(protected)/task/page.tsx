@@ -56,11 +56,9 @@ function TaskDetailPageInner() {
                 setLoading(true);
                 setError(null);
 
-                console.log('Fetching task from backend:', taskId);
                 const fetchedTask = await taskService.getTaskById(taskId);
 
                 if (fetchedTask) {
-                    console.log('Task fetched from backend:', fetchedTask);
                     setTask(fetchedTask);
                     // Add to store for future reference
                     addTask(fetchedTask);
@@ -81,7 +79,6 @@ function TaskDetailPageInner() {
     // Initialize content when task loads from backend
     useEffect(() => {
         if (task && taskId && !contentInitialized) {
-            console.log('Initializing content for task:', task.id, 'Description:', task.description);
 
             let initialContent = "";
 
@@ -98,12 +95,10 @@ function TaskDetailPageInner() {
                     const parsed = JSON.parse(initialContent);
                     if (Array.isArray(parsed)) {
                         // Valid block structure
-                        console.log('Valid JSON blocks found:', parsed);
                         setTaskContent(initialContent);
                         lastSavedContentRef.current = initialContent;
                     } else {
                         // Invalid structure, convert to paragraph block
-                        console.log('Invalid block structure, converting to paragraph block');
                         const paragraphBlock = [{
                             id: Date.now().toString(),
                             type: 'paragraph',
@@ -116,7 +111,6 @@ function TaskDetailPageInner() {
                     }
                 } catch (e) {
                     // Not JSON, convert to paragraph block
-                    console.log('Non-JSON content, converting to paragraph block:', e);
                     const paragraphBlock = [{
                         id: Date.now().toString(),
                         type: 'paragraph',
@@ -129,7 +123,6 @@ function TaskDetailPageInner() {
                 }
             } else {
                 // No content, start with empty
-                console.log('No content found, starting with empty editor');
                 setTaskContent("");
                 lastSavedContentRef.current = "";
             }
@@ -144,8 +137,6 @@ function TaskDetailPageInner() {
 
         try {
             setIsSaving(true);
-            console.log('Saving task description:', content);
-
             // Update local task state first for immediate UI feedback
             setTask(prev => prev ? { ...prev, description: content } : prev);
             setTaskDescription(taskId, content);
@@ -158,7 +149,6 @@ function TaskDetailPageInner() {
             });
 
             lastSavedContentRef.current = content;
-            console.log('Task description saved successfully');
         } catch (error) {
             console.error('Error saving task description:', error);
             // Revert local change on error
@@ -177,7 +167,6 @@ function TaskDetailPageInner() {
     const handleContentChange = useCallback((newContent: string) => {
         if (!contentInitialized) return;
 
-        console.log('Content changed:', newContent);
         setTaskContent(newContent);
 
         // Clear existing timeout
