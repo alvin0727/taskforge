@@ -73,7 +73,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-          
+
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
         with:
@@ -82,8 +82,8 @@ jobs:
       - name: Pull latest images and restart services (docker-compose)
         run: |
           cd /home/ubuntu/taskforge
-          docker-compose pull
-          docker-compose up -d --remove-orphans --force-recreate
+          docker compose pull
+          docker compose up -d --remove-orphans --force-recreate
 
       - name: Cleanup old images
         run: docker system prune -af
