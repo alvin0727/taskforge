@@ -1,5 +1,6 @@
 import api from "@/lib/axios";
 import * as TaskTypes from "@/lib/types/task";
+import { GenerateDescriptionRequest, GenerateDescriptionResponse } from "@/lib/types/task";
 
 export async function getTaskByBoard(boardId: string): Promise<{ tasks: Record<string, TaskTypes.Task[]> }> {
     const res = await api.get(`/board/${boardId}/tasks`);
@@ -45,6 +46,13 @@ export async function getTaskById(taskId: string): Promise<TaskTypes.Task> {
     return res.data.task;
 }
 
+export async function generateTaskDescription(
+    request: GenerateDescriptionRequest
+): Promise<GenerateDescriptionResponse> {
+    const res = await api.post('/ai/generate-task-description', request)
+    return res.data;
+}
+
 export default {
     getTaskByBoard,
     updateTaskPosition,
@@ -52,5 +60,6 @@ export default {
     createNewTask,
     updateTaskPartial,
     deleteTask,
-    getTaskById
+    getTaskById,
+    generateTaskDescription
 };

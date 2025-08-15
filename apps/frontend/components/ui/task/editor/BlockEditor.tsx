@@ -22,6 +22,9 @@ import {
 import {
     CSS,
 } from '@dnd-kit/utilities';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { detectLanguage } from '@/utils/blockEditor';
 
 interface Block {
     id: string;
@@ -161,17 +164,19 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
 
     const blockRef = useRef<HTMLDivElement>(null);
     const editableRef = useRef<HTMLElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [localContent, setLocalContent] = useState(block.content);
     const [isContentInitialized, setIsContentInitialized] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [isCodeEditing, setIsCodeEditing] = useState(false);
 
     // Detect mobile device
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
-        
+
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
@@ -201,7 +206,7 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
     };
 
     const getBlockStyles = (type: Block['type']) => {
-        const baseStyles = "w-full bg-transparent border-none outline-none resize-none overflow-hidden text-neutral-300";
+        const baseStyles = "w-full bg-transparent border-none outline-none resize-none overflow-hidden text-neutral-300 text-xs sm:text-sm";
 
         switch (type) {
             case 'heading1':
@@ -270,25 +275,55 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
             setLocalContent(block.content);
 
             // Update the editable element if it exists and is not currently focused
-            if (editableRef.current && document.activeElement !== editableRef.current) {
+            if (editableRef.current && document.activeElement !== editableRef.current && !isCodeEditing) {
                 editableRef.current.textContent = block.content;
             }
         }
-    }, [block.content, localContent]);
+    }, [block.content, localContent, isCodeEditing]);
 
     // Set initial content when component mounts
     useEffect(() => {
-        if (editableRef.current && !isContentInitialized) {
+        if (editableRef.current && !isContentInitialized && !isCodeEditing) {
             editableRef.current.textContent = block.content;
             setLocalContent(block.content);
             setIsContentInitialized(true);
         }
-    }, [block.content, isContentInitialized]);
+    }, [block.content, isContentInitialized, isCodeEditing]);
+
+    // Auto-resize textarea and focus management for code editing
+    useEffect(() => {
+        if (isCodeEditing && textareaRef.current) {
+            textareaRef.current.focus();
+            // Set cursor to end
+            const length = textareaRef.current.value.length;
+            textareaRef.current.setSelectionRange(length, length);
+            
+            // Auto-resize textarea
+            const adjustHeight = () => {
+                if (textareaRef.current) {
+                    textareaRef.current.style.height = 'auto';
+                    textareaRef.current.style.height = Math.max(60, textareaRef.current.scrollHeight) + 'px';
+                }
+            };
+            adjustHeight();
+        }
+    }, [isCodeEditing]);
 
     const handleInput = useCallback((e: React.FormEvent<HTMLElement>) => {
         const newContent = (e.target as HTMLElement).textContent || '';
         setLocalContent(newContent);
         onContentChange(block.id, newContent);
+    }, [block.id, onContentChange]);
+
+    const handleTextareaInput = useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
+        const newContent = (e.target as HTMLTextAreaElement).value;
+        setLocalContent(newContent);
+        onContentChange(block.id, newContent);
+        
+        // Auto-resize
+        const textarea = e.target as HTMLTextAreaElement;
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.max(60, textarea.scrollHeight) + 'px';
     }, [block.id, onContentChange]);
 
     const handleFocus = useCallback(() => {
@@ -302,6 +337,32 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
         }
     }, [block.id, onDeleteClick, isOnlyBlock]);
 
+    const handleCodeDoubleClick = useCallback(() => {
+        if (block.type === 'code') {
+            setIsCodeEditing(true);
+        }
+    }, [block.type]);
+
+    const handleCodeBlur = useCallback(() => {
+        setIsCodeEditing(false);
+    }, []);
+
+    const handleCodeKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            setIsCodeEditing(false);
+            return;
+        }
+        
+        // Allow normal textarea behavior for other keys
+        if (e.key === 'Enter' && !e.shiftKey) {
+            // Don't prevent default for code blocks - allow new lines
+            return;
+        }
+        
+        // Pass other keys to parent handler
+        onKeyDown(e, block.id);
+    }, [block.id, onKeyDown]);
+
     const Component = getBlockComponent(block.type) as any;
 
     return (
@@ -314,11 +375,10 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
         >
             <div className="flex items-start gap-1 sm:gap-2 py-2 mx-2 sm:mx-4">
                 {/* Left Controls - Hidden on mobile unless hovered/active */}
-                <div className={`flex items-center gap-1 transition-opacity duration-200 pt-1 ${
-                    isMobile 
-                        ? (isActive ? 'opacity-100' : 'opacity-0') 
-                        : 'opacity-0 group-hover:opacity-100'
-                } ${isMobile ? '-ml-6 sm:-ml-14' : '-ml-14'}`}>
+                <div className={`flex items-center gap-1 transition-opacity duration-200 pt-1 ${isMobile
+                    ? (isActive ? 'opacity-100' : 'opacity-0')
+                    : 'opacity-0 group-hover:opacity-100'
+                    } ${isMobile ? '-ml-6 sm:-ml-14' : '-ml-14'}`}>
                     <button
                         onClick={(e) => onPlusClick(block.id, e)}
                         className="w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center rounded-md hover:bg-neutral-700 text-neutral-400 hover:text-neutral-300 transition-colors"
@@ -337,7 +397,7 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                 </div>
 
                 {/* Block Content Container */}
-                <div className={`flex-1 min-w-0 relative rounded-sm ${isActive ? 'bg-neutral-700/40' : ''}`}>
+                <div className={`flex-1 min-w-78 relative rounded-sm ${isActive ? 'bg-neutral-700/40' : ''}`}>
                     <div ref={blockRef} className="relative">
                         {block.type === 'bulletList' && localContent && (
                             <div className="absolute left-1.5 sm:left-2 top-3 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-neutral-400 rounded-full"></div>
@@ -348,38 +408,108 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                             </div>
                         )}
 
-                        <Component
-                            ref={editableRef}
-                            id={`block-${block.id}`}
-                            className={getBlockStyles(block.type)}
-                            contentEditable
-                            suppressContentEditableWarning
-                            onInput={handleInput}
-                            onFocus={handleFocus}
-                            onKeyDown={(e: React.KeyboardEvent) => onKeyDown(e, block.id)}
-                            style={{
-                                minHeight: block.type === 'code' ? '60px' : '32px',
-                                direction: 'ltr',
-                                textAlign: 'left',
-                                paddingRight: isMobile ? '32px' : '36px', // Space for delete button
-                                wordWrap: 'break-word',
-                                overflowWrap: 'break-word',
-                            }}
-                        />
-
-                        {/* Placeholder overlay dengan styling yang sesuai */}
-                        {!localContent && (
-                            <div
-                                className={getPlaceholderStyles(block.type)}
-                                style={{
-                                    paddingLeft: block.type === 'quote' ? (isMobile ? '0.75rem' : '1rem') :
-                                        block.type === 'bulletList' || block.type === 'numberedList' ? (isMobile ? '1.25rem' : '1.5rem') : '0',
-                                    paddingTop: block.type === 'code' ? (isMobile ? '0.5rem' : '0.75rem') : '0',
-                                    paddingRight: isMobile ? '32px' : '36px', // Space for delete button
-                                }}
-                            >
-                                {getPlaceholder(block.type)}
+                        {block.type === 'code' ? (
+                            <div style={{ position: 'relative' }}>
+                                {isCodeEditing ? (
+                                    <textarea
+                                        ref={textareaRef}
+                                        value={localContent}
+                                        onInput={handleTextareaInput}
+                                        onFocus={handleFocus}
+                                        onBlur={handleCodeBlur}
+                                        onKeyDown={handleCodeKeyDown}
+                                        placeholder={getPlaceholder(block.type)}
+                                        style={{
+                                            width: '100%',
+                                            minHeight: '60px',
+                                            margin: 0,
+                                            borderRadius: '0.375rem',
+                                            fontSize: '0.7em',
+                                            fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                                            backgroundColor: '#1e1e1e',
+                                            color: '#d4d4d4',
+                                            border: '2px solid #007acc',
+                                            padding: '16px',
+                                            resize: 'vertical',
+                                            outline: 'none',
+                                            overflow: 'auto',
+                                        }}
+                                    />
+                                ) : (
+                                    <div
+                                        onDoubleClick={handleCodeDoubleClick}
+                                        style={{ cursor: 'pointer', position: 'relative' }}
+                                    >
+                                        <SyntaxHighlighter
+                                            language={detectLanguage(localContent)}
+                                            style={vscDarkPlus}
+                                            customStyle={{
+                                                minHeight: '60px',
+                                                margin: 0,
+                                                borderRadius: '0.375rem',
+                                                fontSize: '0.7em',
+                                                overflowX: 'auto',
+                                            }}
+                                        >
+                                            {localContent || getPlaceholder(block.type)}
+                                        </SyntaxHighlighter>
+                                        {/* Edit hint overlay */}
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                top: '8px',
+                                                right: '8px',
+                                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                                color: 'white',
+                                                padding: '4px 8px',
+                                                borderRadius: '4px',
+                                                fontSize: '12px',
+                                                opacity: (isHovered || isActive) ? 1 : 0,
+                                                transition: 'opacity 0.2s ease',
+                                                pointerEvents: 'none',
+                                            }}
+                                        >
+                                            Double-click to edit
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                        ) : (
+                            <>
+                                <Component
+                                    ref={editableRef}
+                                    id={`block-${block.id}`}
+                                    className={getBlockStyles(block.type)}
+                                    contentEditable
+                                    suppressContentEditableWarning
+                                    onInput={handleInput}
+                                    onFocus={handleFocus}
+                                    onKeyDown={(e: React.KeyboardEvent) => onKeyDown(e, block.id)}
+                                    style={{
+                                        minHeight: '32px',
+                                        direction: 'ltr',
+                                        textAlign: 'left',
+                                        paddingRight: isMobile ? '32px' : '36px',
+                                        wordWrap: 'break-word',
+                                        overflowWrap: 'break-word',
+                                    }}
+                                />
+
+                                {/* Placeholder overlay with appropriate styling */}
+                                {!localContent && (
+                                    <div
+                                        className={getPlaceholderStyles(block.type)}
+                                        style={{
+                                            paddingLeft: block.type === 'quote' ? (isMobile ? '0.75rem' : '1rem') :
+                                                block.type === 'bulletList' || block.type === 'numberedList' ? (isMobile ? '1.25rem' : '1.5rem') : '0',
+                                            paddingTop: '0',
+                                            paddingRight: isMobile ? '32px' : '36px', // Space for delete button
+                                        }}
+                                    >
+                                        {getPlaceholder(block.type)}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
@@ -388,15 +518,14 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                 <div className="flex items-center pt-1">
                     <button
                         onClick={handleDeleteClick}
-                        className={`w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-md transition-all duration-200 ${
-                            isOnlyBlock
-                                ? 'opacity-20 cursor-not-allowed text-neutral-600'
-                                : isMobile
-                                    ? (isActive ? 'opacity-100 hover:bg-red-900/20 text-red-400 hover:text-red-300' : 'opacity-0')
-                                    : (isHovered || isActive
-                                        ? 'opacity-100 hover:bg-red-900/20 text-red-400 hover:text-red-300'
-                                        : 'opacity-0 group-hover:opacity-60 text-neutral-400 hover:text-red-400 hover:bg-red-900/20')
-                        }`}
+                        className={`w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-md transition-all duration-200 ${isOnlyBlock
+                            ? 'opacity-20 cursor-not-allowed text-neutral-600'
+                            : isMobile
+                                ? (isActive ? 'opacity-100 hover:bg-red-900/20 text-red-400 hover:text-red-300' : 'opacity-0')
+                                : (isHovered || isActive
+                                    ? 'opacity-100 hover:bg-red-900/20 text-red-400 hover:text-red-300'
+                                    : 'opacity-0 group-hover:opacity-60 text-neutral-400 hover:text-red-400 hover:bg-red-900/20')
+                            }`}
                         title={isOnlyBlock ? "Cannot delete the last block" : "Delete block"}
                         disabled={isOnlyBlock}
                     >
@@ -433,7 +562,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
-        
+
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
@@ -645,11 +774,11 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                 e.preventDefault();
                 const element = e.target as HTMLElement;
                 const rect = element.getBoundingClientRect();
-                
+
                 // Adjust menu position for mobile
                 const menuX = isMobile ? Math.max(10, rect.left) : rect.left;
                 const menuY = isMobile ? Math.max(10, rect.bottom + 5) : rect.bottom;
-                
+
                 setMenuPosition({ x: menuX, y: menuY });
                 setMenuTriggerBlockId(blockId); // Set trigger block ID
                 setShowBlockMenu(true);
@@ -659,11 +788,11 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
 
     const handlePlusClick = useCallback((blockId: string, event: React.MouseEvent) => {
         const rect = (event.target as HTMLElement).getBoundingClientRect();
-        
+
         // Adjust menu position for mobile
         const menuX = isMobile ? Math.max(10, rect.left) : rect.right + 10;
         const menuY = isMobile ? Math.max(10, rect.top) : rect.top;
-        
+
         setMenuPosition({ x: menuX, y: menuY });
         setActiveBlockId(blockId);
         setMenuTriggerBlockId(blockId); // Set trigger block ID

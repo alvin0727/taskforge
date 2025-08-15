@@ -289,24 +289,36 @@ class OpenAIService:
             2. "Acceptance Criteria" heading
             3. 3-5 specific acceptance criteria as bullet points
             4. Optional: "Technical Notes" or "Implementation Details" heading if technical
-            5. Optional: Additional bullet points or paragraphs as needed
+            5. Optional: Include CODE BLOCKS for technical implementation examples
+            6. Optional: Include QUOTES for important notes or best practices
+            7. Optional: Additional bullet points or paragraphs as needed
 
             CRITICAL: Return ONLY a valid JSON array of blocks. No markdown, no explanations, no additional text.
 
-            Format example:
+            Format example with code and quotes:
             [
             {{"id": "block-{timestamp}", "type": "paragraph", "content": "Clear overview of the task...", "position": 0}},
             {{"id": "block-{timestamp + 1}", "type": "heading2", "content": "Acceptance Criteria", "position": 1}},
             {{"id": "block-{timestamp + 2}", "type": "bulletList", "content": "First specific criterion", "position": 2}},
-            {{"id": "block-{timestamp + 3}", "type": "bulletList", "content": "Second specific criterion", "position": 3}}
+            {{"id": "block-{timestamp + 3}", "type": "heading2", "content": "Implementation Example", "position": 3}},
+            {{"id": "block-{timestamp + 4}", "type": "code", "content": "// Example code snippet\\nfunction example() {{\\n  return 'implementation';\\n}}", "position": 4}},
+            {{"id": "block-{timestamp + 5}", "type": "quote", "content": "Important: Remember to follow security best practices", "position": 5}}
             ]
 
             Available block types: paragraph, heading1, heading2, heading3, quote, code, bulletList, numberedList
+
+            Guidelines for code/quote usage:
+            - Use CODE blocks for: technical implementation examples, configuration snippets, API endpoints, SQL queries
+            - Use QUOTE blocks for: important warnings, best practices, key reminders, stakeholder requirements
+            - Keep code examples concise and relevant to the task
+            - Make quotes actionable and meaningful
 
             Requirements:
             - Each bullet point must be specific and measurable
             - Content should be professional and actionable
             - Include realistic acceptance criteria
+            - Include code examples when task is technical
+            - Include quotes for important notes or warnings
             - Keep content concise but comprehensive
             """
 

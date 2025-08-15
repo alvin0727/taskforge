@@ -74,3 +74,30 @@ export interface TaskUpdateFields {
   estimated_hours?: number | null;
   labels?: any[];
 }
+
+
+// Block editor types for task description
+export interface DescriptionBlock {
+  id: string;
+  type: 'paragraph' | 'heading1' | 'heading2' | 'heading3' | 'quote' | 'code' | 'bulletList' | 'numberedList';
+  content: string;
+  position: number;
+}
+
+// Request interface for generating task description
+export interface GenerateDescriptionRequest {
+  title: string; // Required, 3-200 characters
+  project_id?: string | null; // Optional project ID for context
+  user_requirements?: string | null; // Optional, max 1000 characters  
+  priority?: TaskPriority | null; // Optional priority
+}
+
+// Success response interface
+export interface GenerateDescriptionResponse {
+  success: true;
+  message: string;
+  description: string; // JSON string of DescriptionBlock array
+  context_used: boolean;
+  project_id: string | null;
+  has_requirements: boolean;
+}

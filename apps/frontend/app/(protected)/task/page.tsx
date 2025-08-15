@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import taskService from '@/services/task/taskService';
 import { useTaskStore } from '@/stores/taskStore';
-import { Task, TaskUpdateFields } from '@/lib/types/task';
+import { Task, TaskUpdateFields, GenerateDescriptionRequest } from '@/lib/types/task';
 import { useProjectTeamMembers } from '@/components/ui/team/TeamUtils';
 import toast from 'react-hot-toast';
 import Loading from '@/components/layout/LoadingPage';
@@ -16,6 +16,7 @@ import DueDateDropdown from '@/components/ui/task/dropdowns/DueDateDropdown';
 import LabelsDropdown from '@/components/ui/task/dropdowns/LabelsDropdown';
 import EstimatedHoursInput from '@/components/ui/task/dropdowns/EstimatedHoursInput';
 import BlockEditor from '@/components/ui/task/editor/BlockEditor';
+import { getAxiosErrorMessage } from '@/utils/errorMessage';
 
 function TaskDetailPageInner() {
     const searchParams = useSearchParams();
@@ -28,6 +29,11 @@ function TaskDetailPageInner() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [task, setTask] = useState<Task | null>(null);
+
+    // AI Generation states
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [showGenerateInput, setShowGenerateInput] = useState(false);
+    const [generateRequirements, setGenerateRequirements] = useState('');
 
     // Local content state with debounced saving
     const [taskContent, setTaskContent] = useState("");
@@ -130,6 +136,67 @@ function TaskDetailPageInner() {
             setContentInitialized(true);
         }
     }, [task, taskId, contentInitialized, setTaskDescription]);
+
+    // AI Generate Description Function
+    const handleGenerateDescription = async () => {
+        if (!task) return;
+
+        try {
+            setIsGenerating(true);
+
+            const request: GenerateDescriptionRequest = {
+                title: task.title,
+                project_id: task.project_id,
+                user_requirements: generateRequirements.trim() || null,
+                priority: task.priority
+            };
+
+            const response = await taskService.generateTaskDescription(request);
+
+            if (response.success) {
+                // Update local content state
+                setTaskContent(response.description);
+                lastSavedContentRef.current = response.description;
+
+                // Update store
+                setTaskDescription(taskId!, response.description);
+                updateTaskPartial(task.id, { description: response.description });
+
+                // Update local task state
+                setTask(prev => prev ? { ...prev, description: response.description } : prev);
+
+                // Save to backend
+                await taskService.updateTaskPartial({
+                    task_id: task.id,
+                    updates: { description: response.description }
+                });
+
+                toast.success('Task description generated successfully!');
+                setShowGenerateInput(false);
+                setGenerateRequirements('');
+            }
+        } catch (error: any) {
+            const errMsg = getAxiosErrorMessage(error);
+            toast.error(errMsg || 'Failed to generate description');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    // Check if description is empty or minimal
+    const isDescriptionEmpty = () => {
+        if (!taskContent) return true;
+
+        try {
+            const blocks = JSON.parse(taskContent);
+            if (!Array.isArray(blocks) || blocks.length === 0) return true;
+
+            // Check if all blocks are empty
+            return blocks.every(block => !block.content || block.content.trim() === '');
+        } catch {
+            return !taskContent.trim();
+        }
+    };
 
     // Debounced save function
     const debouncedSave = useCallback(async (content: string) => {
@@ -277,34 +344,32 @@ function TaskDetailPageInner() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
                 <div className="grid grid-cols-1 gap-4 sm:gap-8">
                     <div className="space-y-4 sm:space-y-8">
-                        <div className="bg-neutral-800/50 rounded-lg p-4 sm:p-6 lg:p-8">
-                            <div className="flex flex-col gap-4">
+                        <div className="bg-neutral-800/50 rounded-lg p-0 sm:p-6 lg:p-8">
+                            <div className="flex flex-col gap-4 border-b border-neutral-700 pb-4 sm:pb-6 lg:pb-8">
                                 {/* Title & Status - Mobile responsive */}
-                                <div className="flex items-start min-w-0 mb-2">
-                                    <div className="w-1 h-5 bg-blue-500 rounded-full mr-2 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
+                                <div className="flex items-center min-w-0 mb-2 gap-2 m-2">
+                                    <div className="w-1 h-5 bg-blue-500 rounded-full flex-shrink-0" />
+                                    <div className="flex items-center min-w-0 flex-1">
                                         <h1 className="text-xl sm:text-2xl font-bold text-neutral-100 break-words">
                                             {task.title}
                                         </h1>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <div className="px-2 py-0.5 rounded bg-neutral-700/30 text-xs">
-                                                <span className="text-neutral-300 capitalize">
-                                                    {task.status.replace('-', ' ')}
-                                                </span>
-                                            </div>
-                                            {/* Save indicator */}
-                                            {isSaving && (
-                                                <div className="flex items-center gap-1 text-xs text-neutral-400">
-                                                    <div className="animate-spin rounded-full h-3 w-3 border-b border-neutral-400" />
-                                                    <span className="hidden sm:inline">Saving...</span>
-                                                </div>
-                                            )}
+                                        <div className="ml-2 px-2 py-0.5 rounded bg-neutral-700/30 text-xs flex items-center">
+                                            <span className="text-neutral-300 capitalize">
+                                                {task.status.replace('-', ' ')}
+                                            </span>
                                         </div>
+                                        {/* Save indicator */}
+                                        {isSaving && (
+                                            <div className="flex items-center gap-1 text-xs text-neutral-400 ml-2">
+                                                <div className="animate-spin rounded-full h-3 w-3 border-b border-neutral-400" />
+                                                <span className="hidden sm:inline">Saving...</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
                                 {/* Properties - Mobile responsive layout */}
-                                <div className="flex flex-wrap gap-2 mt-1">
+                                <div className="flex flex-wrap gap-2 m-2 mt-1">
                                     <LabelsDropdown
                                         currentLabels={task.labels || []}
                                         onLabelsChange={(labelName) => {
@@ -377,14 +442,85 @@ function TaskDetailPageInner() {
                             <div className="bg-neutral-800/40 rounded-lg p-4 sm:p-6 lg:p-8 mt-4 sm:mt-8">
                                 <div className="mb-4 sm:mb-6 flex items-center justify-between">
                                     <h3 className="text-base sm:text-lg font-semibold text-neutral-100">Description</h3>
+
+                                    {/* AI Generate Button - Show when description is empty or minimal */}
+                                    {isDescriptionEmpty() && !showGenerateInput && (
+                                        <button
+                                            onClick={() => setShowGenerateInput(true)}
+                                            disabled={isGenerating}
+                                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                            Generate with AI
+                                        </button>
+                                    )}
                                 </div>
+
+                                {/* AI Generate Input Section */}
+                                {showGenerateInput && (
+                                    <div className="mb-4 p-4 bg-neutral-700/30 rounded-lg border border-neutral-600/50">
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-neutral-200 mb-2">
+                                                    Additional Requirements (Optional)
+                                                </label>
+                                                <textarea
+                                                    value={generateRequirements}
+                                                    onChange={(e) => setGenerateRequirements(e.target.value)}
+                                                    placeholder="Describe any specific requirements, features, or details you want included in the task description..."
+                                                    className="w-full p-3 bg-neutral-800 border border-neutral-600 rounded-lg text-neutral-100 placeholder-neutral-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                                                    rows={3}
+                                                    maxLength={1000}
+                                                />
+                                                <div className="text-xs text-neutral-400 mt-1">
+                                                    {generateRequirements.length}/1000 characters
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2 justify-end">
+                                                <button
+                                                    onClick={() => {
+                                                        setShowGenerateInput(false);
+                                                        setGenerateRequirements('');
+                                                    }}
+                                                    disabled={isGenerating}
+                                                    className="px-3 py-1.5 text-neutral-400 hover:text-neutral-300 text-sm transition-colors disabled:opacity-50"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={handleGenerateDescription}
+                                                    disabled={isGenerating}
+                                                    className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                                                >
+                                                    {isGenerating ? (
+                                                        <>
+                                                            <div className="animate-spin rounded-full h-4 w-4 border-b border-white" />
+                                                            Generating...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                            </svg>
+                                                            Generate Description
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Container responsive padding */}
                                 <div className="px-0 sm:px-2 lg:px-4 py-2">
                                     {contentInitialized && (
                                         <BlockEditor
                                             content={taskContent}
                                             onChange={handleContentChange}
-                                            placeholder="Add ..."
+                                            placeholder="Add task description..."
                                         />
                                     )}
                                     {!contentInitialized && (

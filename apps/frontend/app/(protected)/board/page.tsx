@@ -498,7 +498,7 @@ function BoardPageInner() {
       onDragEnd={handleDragEnd}
     >
       <div
-        className="fixed inset-0 bg-neutral-950 h-screen transition-all duration-300"
+        className="fixed inset-0 bg-neutral-950 transition-all duration-300"
         style={{
           marginLeft: sidebarMargin,
           marginTop: topMargin,

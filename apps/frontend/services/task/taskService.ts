@@ -37,6 +37,11 @@ export async function getTaskById(taskId: string): Promise<TaskTypes.Task> {
     return res;
 }
 
+export async function generateTaskDescription(request: TaskTypes.GenerateDescriptionRequest): Promise<TaskTypes.GenerateDescriptionResponse> {
+    const res = await taskAdapter.generateTaskDescription(request);
+    return res;
+}
+
 export default {
     getTasksByBoard,
     updateTaskPosition,
@@ -44,5 +49,6 @@ export default {
     createNewTask,
     updateTaskPartial,
     deleteTask,
-    getTaskById
+    getTaskById,
+    generateTaskDescription
 };
