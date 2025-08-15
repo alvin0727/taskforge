@@ -42,6 +42,16 @@ export async function generateTaskDescription(request: TaskTypes.GenerateDescrip
     return res;
 }
 
+export async function enhanceTaskDescription(request: TaskTypes.EnhanceDescriptionRequest): Promise<TaskTypes.EnhanceDescriptionResponse> {
+    const res = await taskAdapter.enhanceTaskDescription(request);
+    return res;
+}
+
+export async function getAIUsageInfo(): Promise<TaskTypes.AIUsageResponse> {
+    const res = await taskAdapter.getAIUsageInfo();
+    return res;
+}
+
 export default {
     getTasksByBoard,
     updateTaskPosition,
@@ -50,5 +60,7 @@ export default {
     updateTaskPartial,
     deleteTask,
     getTaskById,
-    generateTaskDescription
+    generateTaskDescription,
+    enhanceTaskDescription,
+    getAIUsageInfo
 };

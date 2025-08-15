@@ -51,10 +51,10 @@ export interface RequestTaskUpdatePartial {
   updates: {
     title?: string;
     description?: string;
-    priority?: TaskPriority | null; 
-    assignee_id?: string | null; 
-    due_date?: string | null; 
-    estimated_hours?: number | null; 
+    priority?: TaskPriority | null;
+    assignee_id?: string | null;
+    due_date?: string | null;
+    estimated_hours?: number | null;
     labels?: string[];
   };
 }
@@ -100,4 +100,55 @@ export interface GenerateDescriptionResponse {
   context_used: boolean;
   project_id: string | null;
   has_requirements: boolean;
+  rate_limit: RateLimit;
+}
+
+// Request interface for enhancing existing task description
+export interface EnhanceDescriptionRequest {
+  title: string; // Required, 3-200 characters
+  existing_description: string; // Required, JSON string of current description blocks, max 10000 characters
+  project_id?: string | null; // Optional project ID for context
+  enhancement_instructions?: string | null; // Optional, max 1000 characters
+  priority?: TaskPriority | null; // Optional priority
+}
+
+// Rate limit information
+export interface RateLimit {
+  remaining: number; // Requests remaining today
+  limit: number; // Daily limit
+  reset_time: string; // ISO string for when limits reset (midnight UTC)
+}
+
+
+// Success response interface for enhance
+export interface EnhanceDescriptionResponse {
+  success: true;
+  message: string;
+  description: string; // JSON string of enhanced DescriptionBlock array
+  original_description: string; // JSON string of original DescriptionBlock array
+  context_used: boolean;
+  project_id: string | null;
+  has_instructions: boolean;
+  enhanced: boolean; // Whether AI successfully enhanced the content
+  rate_limit: RateLimit;
+}
+
+export interface FeatureUsage {
+  count: number;
+  limit: number;
+  remaining: number;
+}
+
+export interface AIUsage {
+  enhance_description: FeatureUsage;
+  generate_description: FeatureUsage;
+}
+
+export interface AIUsageResponse {
+  usage: AIUsage;
+  limits?: {
+    generate_description: number;
+    enhance_description: number;
+  };
+  reset_time?: string;
 }

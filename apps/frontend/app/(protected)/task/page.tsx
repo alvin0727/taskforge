@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import taskService from '@/services/task/taskService';
 import { useTaskStore } from '@/stores/taskStore';
-import { Task, TaskUpdateFields, GenerateDescriptionRequest } from '@/lib/types/task';
+import { Task, TaskUpdateFields, GenerateDescriptionRequest, EnhanceDescriptionRequest } from '@/lib/types/task';
 import { useProjectTeamMembers } from '@/components/ui/team/TeamUtils';
 import toast from 'react-hot-toast';
 import Loading from '@/components/layout/LoadingPage';
@@ -32,8 +32,11 @@ function TaskDetailPageInner() {
 
     // AI Generation states
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isEnhancing, setIsEnhancing] = useState(false);
     const [showGenerateInput, setShowGenerateInput] = useState(false);
+    const [showEnhanceInput, setShowEnhanceInput] = useState(false);
     const [generateRequirements, setGenerateRequirements] = useState('');
+    const [enhanceInstructions, setEnhanceInstructions] = useState('');
 
     // Local content state with debounced saving
     const [taskContent, setTaskContent] = useState("");
@@ -48,6 +51,8 @@ function TaskDetailPageInner() {
     const updateTaskPartial = useTaskStore((state) => state.updateTaskPartial);
     const setTaskDescription = useTaskStore((state) => state.setTaskDescription);
     const teamMembers = useProjectTeamMembers(task?.project_id ?? undefined);
+    const aiUsageInfo = useTaskStore((state) => state.getAIUsageInfo());
+    const setAiUsageInfo = useTaskStore((state) => state.setAIUsageInfo);
 
     // Fetch task directly from backend on first load
     useEffect(() => {
@@ -63,7 +68,7 @@ function TaskDetailPageInner() {
                 setError(null);
 
                 const fetchedTask = await taskService.getTaskById(taskId);
-
+                const aiUsageInfo = await taskService.getAIUsageInfo();
                 if (fetchedTask) {
                     setTask(fetchedTask);
                     // Add to store for future reference
@@ -71,6 +76,7 @@ function TaskDetailPageInner() {
                 } else {
                     setError('Task not found');
                 }
+                setAiUsageInfo(aiUsageInfo);
             } catch (err) {
                 setError('Failed to fetch task');
                 console.error('Error fetching task:', err);
@@ -137,9 +143,29 @@ function TaskDetailPageInner() {
         }
     }, [task, taskId, contentInitialized, setTaskDescription]);
 
+    // Check if user can use AI features
+    const canUseGenerate = () => {
+        return (
+            aiUsageInfo?.usage?.generate_description &&
+            typeof aiUsageInfo.usage.generate_description.remaining === 'number' &&
+            aiUsageInfo.usage.generate_description.remaining > 0
+        );
+    };
+
+    const canUseEnhance = () => {
+        return (
+            aiUsageInfo?.usage?.enhance_description &&
+            typeof aiUsageInfo.usage.enhance_description.remaining === 'number' &&
+            aiUsageInfo.usage.enhance_description.remaining > 0
+        );
+    };
+
     // AI Generate Description Function
     const handleGenerateDescription = async () => {
-        if (!task) return;
+        if (!task || !canUseGenerate()) {
+            toast.error('You have reached your daily limit for generating descriptions.');
+            return;
+        }
 
         try {
             setIsGenerating(true);
@@ -165,13 +191,35 @@ function TaskDetailPageInner() {
                 // Update local task state
                 setTask(prev => prev ? { ...prev, description: response.description } : prev);
 
+                // Update AI usage info
+                setAiUsageInfo({
+                    ...aiUsageInfo,
+                    usage: {
+                        ...aiUsageInfo?.usage,
+                        generate_description: {
+                            ...(aiUsageInfo?.usage?.generate_description ?? {}),
+                            remaining: response.rate_limit.remaining,
+                            count: (aiUsageInfo?.usage?.generate_description?.limit ?? 0) - response.rate_limit.remaining,
+                            limit: aiUsageInfo?.usage?.generate_description?.limit ?? 0
+                        },
+                        enhance_description: {
+                            ...(aiUsageInfo?.usage?.enhance_description ?? {}),
+                            remaining: aiUsageInfo?.usage?.enhance_description?.remaining ?? 0,
+                            count: aiUsageInfo?.usage?.enhance_description?.count ?? 0,
+                            limit: aiUsageInfo?.usage?.enhance_description?.limit ?? 0
+                        }
+                    },
+                    limits: aiUsageInfo?.limits ?? { generate_description: 2, enhance_description: 2 },
+                    reset_time: aiUsageInfo?.reset_time ?? "",
+                });
+
                 // Save to backend
                 await taskService.updateTaskPartial({
                     task_id: task.id,
                     updates: { description: response.description }
                 });
 
-                toast.success('Task description generated successfully!');
+                toast.success(`Description generated! ${response.rate_limit.remaining} generations remaining today.`);
                 setShowGenerateInput(false);
                 setGenerateRequirements('');
             }
@@ -182,6 +230,87 @@ function TaskDetailPageInner() {
             setIsGenerating(false);
         }
     };
+
+    // AI Enhance Description Function
+    const handleEnhanceDescription = async () => {
+        if (!task || !canUseEnhance()) {
+            toast.error('You have reached your daily limit for enhancing descriptions.');
+            return;
+        }
+
+        if (!taskContent || taskContent.trim() === '') {
+            toast.error('Please add some content before enhancing.');
+            return;
+        }
+
+        try {
+            setIsEnhancing(true);
+
+            const request: EnhanceDescriptionRequest = {
+                title: task.title,
+                existing_description: taskContent,
+                project_id: task.project_id,
+                enhancement_instructions: enhanceInstructions.trim() || null,
+                priority: task.priority
+            };
+
+            const response = await taskService.enhanceTaskDescription(request);
+
+            if (response.success) {
+                // Update local content state
+                setTaskContent(response.description);
+                lastSavedContentRef.current = response.description;
+
+                // Update store
+                setTaskDescription(taskId!, response.description);
+                updateTaskPartial(task.id, { description: response.description });
+
+                // Update local task state
+                setTask(prev => prev ? { ...prev, description: response.description } : prev);
+
+                // Update AI usage info
+                setAiUsageInfo({
+                    ...aiUsageInfo,
+                    usage: {
+                        generate_description: {
+                            ...(aiUsageInfo?.usage?.generate_description ?? {}),
+                            remaining: aiUsageInfo?.usage?.generate_description?.remaining ?? 0,
+                            count: aiUsageInfo?.usage?.generate_description?.count ?? 0,
+                            limit: aiUsageInfo?.usage?.generate_description?.limit ?? 0
+                        },
+                        enhance_description: {
+                            ...(aiUsageInfo?.usage?.enhance_description ?? {}),
+                            remaining: response.rate_limit.remaining,
+                            count: (aiUsageInfo?.usage?.enhance_description?.limit ?? 0) - response.rate_limit.remaining,
+                            limit: aiUsageInfo?.usage?.enhance_description?.limit ?? 0
+                        }
+                    },
+                    limits: aiUsageInfo?.limits ?? { generate_description: 2, enhance_description: 2 },
+                    reset_time: aiUsageInfo?.reset_time ?? "",
+                });
+
+                // Save to backend
+                await taskService.updateTaskPartial({
+                    task_id: task.id,
+                    updates: { description: response.description }
+                });
+
+                const message = response.enhanced
+                    ? `Description enhanced successfully! ${response.rate_limit.remaining} enhancements remaining today.`
+                    : `Description processed with minimal changes. ${response.rate_limit.remaining} enhancements remaining today.`;
+
+                toast.success(message);
+                setShowEnhanceInput(false);
+                setEnhanceInstructions('');
+            }
+        } catch (error: any) {
+            const errMsg = getAxiosErrorMessage(error);
+            toast.error(errMsg || 'Failed to enhance description');
+        } finally {
+            setIsEnhancing(false);
+        }
+    };
+
 
     // Check if description is empty or minimal
     const isDescriptionEmpty = () => {
@@ -195,6 +324,25 @@ function TaskDetailPageInner() {
             return blocks.every(block => !block.content || block.content.trim() === '');
         } catch {
             return !taskContent.trim();
+        }
+    };
+
+    // Check if description has substantial content for enhancement
+    const hasSubstantialContent = () => {
+        if (!taskContent) return false;
+
+        try {
+            const blocks = JSON.parse(taskContent);
+            if (!Array.isArray(blocks)) return false;
+
+            const totalContent = blocks
+                .map(block => block.content || '')
+                .join(' ')
+                .trim();
+
+            return totalContent.length > 50; // At least 50 characters
+        } catch {
+            return taskContent.trim().length > 50;
         }
     };
 
@@ -340,13 +488,12 @@ function TaskDetailPageInner() {
 
     return (
         <div className="min-h-screen bg-neutral-900 pt-16 sm:pt-2">
-            {/* Responsive container with better mobile padding */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
                 <div className="grid grid-cols-1 gap-4 sm:gap-8">
                     <div className="space-y-4 sm:space-y-8">
                         <div className="bg-neutral-800/50 rounded-lg p-0 sm:p-6 lg:p-8">
+                            {/* Task Header */}
                             <div className="flex flex-col gap-4 border-b border-neutral-700 pb-4 sm:pb-6 lg:pb-8">
-                                {/* Title & Status - Mobile responsive */}
                                 <div className="flex items-center min-w-0 mb-2 gap-2 m-2">
                                     <div className="w-1 h-5 bg-blue-500 rounded-full flex-shrink-0" />
                                     <div className="flex items-center min-w-0 flex-1">
@@ -358,7 +505,6 @@ function TaskDetailPageInner() {
                                                 {task.status.replace('-', ' ')}
                                             </span>
                                         </div>
-                                        {/* Save indicator */}
                                         {isSaving && (
                                             <div className="flex items-center gap-1 text-xs text-neutral-400 ml-2">
                                                 <div className="animate-spin rounded-full h-3 w-3 border-b border-neutral-400" />
@@ -368,7 +514,7 @@ function TaskDetailPageInner() {
                                     </div>
                                 </div>
 
-                                {/* Properties - Mobile responsive layout */}
+                                {/* Task Properties */}
                                 <div className="flex flex-wrap gap-2 m-2 mt-1">
                                     <LabelsDropdown
                                         currentLabels={task.labels || []}
@@ -438,24 +584,49 @@ function TaskDetailPageInner() {
                                 </div>
                             </div>
 
-                            {/* Enhanced Task Description Editor - Mobile responsive */}
+                            {/* Task Description Editor */}
                             <div className="bg-neutral-800/40 rounded-lg p-4 sm:p-6 lg:p-8 mt-4 sm:mt-8">
                                 <div className="mb-4 sm:mb-6 flex items-center justify-between">
                                     <h3 className="text-base sm:text-lg font-semibold text-neutral-100">Description</h3>
 
-                                    {/* AI Generate Button - Show when description is empty or minimal */}
-                                    {isDescriptionEmpty() && !showGenerateInput && (
-                                        <button
-                                            onClick={() => setShowGenerateInput(true)}
-                                            disabled={isGenerating}
-                                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                            Generate with AI
-                                        </button>
-                                    )}
+                                    {/* AI Action Buttons */}
+                                    <div className="flex items-center gap-2">
+                                        {/* Generate Button - Show when description is empty */}
+                                        {isDescriptionEmpty() && !showGenerateInput && !showEnhanceInput && (
+                                            <button
+                                                onClick={() => setShowGenerateInput(true)}
+                                                disabled={isGenerating || !canUseGenerate()}
+                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                                                title={!canUseGenerate() ? `No generations remaining today. Resets at ${new Date(aiUsageInfo?.reset_time || '').toLocaleTimeString()}` : ''}
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                                Generate with AI
+                                                {!canUseGenerate() && (
+                                                    <span className="text-xs opacity-75">({aiUsageInfo?.usage?.generate_description?.remaining || 0})</span>
+                                                )}
+                                            </button>
+                                        )}
+
+                                        {/* Enhance Button - Show when there's substantial content */}
+                                        {hasSubstantialContent() && !showGenerateInput && !showEnhanceInput && (
+                                            <button
+                                                onClick={() => setShowEnhanceInput(true)}
+                                                disabled={isEnhancing || !canUseEnhance()}
+                                                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                                                title={!canUseEnhance() ? `No enhancements remaining today. Resets at ${new Date(aiUsageInfo?.reset_time || '').toLocaleTimeString()}` : ''}
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                </svg>
+                                                Enhance with AI
+                                                {!canUseEnhance() && (
+                                                    <span className="text-xs opacity-75">({aiUsageInfo?.usage?.enhance_description?.remaining || 0})</span>
+                                                )}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* AI Generate Input Section */}
@@ -514,7 +685,63 @@ function TaskDetailPageInner() {
                                     </div>
                                 )}
 
-                                {/* Container responsive padding */}
+                                {/* AI Enhance Input Section */}
+                                {showEnhanceInput && (
+                                    <div className="mb-4 p-4 bg-neutral-700/30 rounded-lg border border-purple-600/50">
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-neutral-200 mb-2">
+                                                    Enhancement Instructions (Optional)
+                                                </label>
+                                                <textarea
+                                                    value={enhanceInstructions}
+                                                    onChange={(e) => setEnhanceInstructions(e.target.value)}
+                                                    placeholder="Describe how you want to enhance the description (e.g., add more technical details, include security considerations, add code examples...)..."
+                                                    className="w-full p-3 bg-neutral-800 border border-neutral-600 rounded-lg text-neutral-100 placeholder-neutral-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 resize-none"
+                                                    rows={3}
+                                                    maxLength={1000}
+                                                />
+                                                <div className="text-xs text-neutral-400 mt-1">
+                                                    {enhanceInstructions.length}/1000 characters
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2 justify-end">
+                                                <button
+                                                    onClick={() => {
+                                                        setShowEnhanceInput(false);
+                                                        setEnhanceInstructions('');
+                                                    }}
+                                                    disabled={isEnhancing}
+                                                    className="px-3 py-1.5 text-neutral-400 hover:text-neutral-300 text-sm transition-colors disabled:opacity-50"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={handleEnhanceDescription}
+                                                    disabled={isEnhancing}
+                                                    className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                                                >
+                                                    {isEnhancing ? (
+                                                        <>
+                                                            <div className="animate-spin rounded-full h-4 w-4 border-b border-white" />
+                                                            Enhancing...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                            </svg>
+                                                            Enhance Description
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Block Editor */}
                                 <div className="px-0 sm:px-2 lg:px-4 py-2">
                                     {contentInitialized && (
                                         <BlockEditor
@@ -545,6 +772,7 @@ function TaskDetailPageInner() {
             />
         </div>
     );
+
 }
 
 export default function TaskDetailPage() {

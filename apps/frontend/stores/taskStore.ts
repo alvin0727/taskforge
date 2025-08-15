@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { Task } from '@/lib/types/task';
+import { Task, AIUsageResponse } from '@/lib/types/task';
 
 interface TaskStore {
   tasks: Task[];
   tasksByColumn: Record<string, Task[]>;
   taskDescriptions: Record<string, string>;
+  aiUsageInfo: AIUsageResponse | null;
   setTasks: (tasks: Task[]) => void;
   setTasksByColumn: (tasksByColumn: Record<string, Task[]>) => void;
   clearTasks: () => void;
@@ -15,12 +16,15 @@ interface TaskStore {
   addTask: (task: Task) => void;
   setTaskDescription: (taskId: string, description: string) => void;
   getTaskDescription: (taskId: string) => string;
+  setAIUsageInfo: (info: AIUsageResponse | null) => void;
+  getAIUsageInfo: () => AIUsageResponse | null;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   tasksByColumn: {},
   taskDescriptions: {},
+  aiUsageInfo: null,
 
   setTasks: (tasks) => {
     // Group tasks by status/column
@@ -216,5 +220,15 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   getTaskDescription: (taskId) => {
     const { taskDescriptions } = get();
     return taskDescriptions[taskId] || '';
+  },
+
+  setAIUsageInfo: (info) => {
+    set({ aiUsageInfo: info });
+  },
+
+  getAIUsageInfo: () => {
+    const { aiUsageInfo } = get();
+    return aiUsageInfo;
   }
+
 }));
