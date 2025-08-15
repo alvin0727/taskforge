@@ -64,6 +64,7 @@ async def ensure_indexes():
 
     # Stats indexes
     await db["project_stats"].create_index([("project_id", 1), ("date", 1)], unique=True)
+    
     # Favorites indexes
     await db["user_favorites"].create_index([("user_id", 1), ("item_type", 1), ("item_id", 1)], unique=True)
 
@@ -71,6 +72,12 @@ async def ensure_indexes():
     await db["organization_invitations"].create_index([("token", 1)], unique=True)
     await db["organization_invitations"].create_index([("email", 1)])
     await db["organization_invitations"].create_index([("organization_id", 1)])
+
+    # AI Rate Limiting indexes
+    await db["ai_rate_limits"].create_index([("user_id", 1), ("action_type", 1), ("date", 1)], unique=True)
+    await db["ai_rate_limits"].create_index([("expires_at", 1)], expireAfterSeconds=0)  # TTL index
+    await db["ai_rate_limits"].create_index("user_id")
+    await db["ai_rate_limits"].create_index("action_type")
 
 
 def get_db():

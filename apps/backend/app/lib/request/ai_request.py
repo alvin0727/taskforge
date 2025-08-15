@@ -8,10 +8,8 @@ class GenerateDescriptionRequest(BaseModel):
     priority: Optional[str] = Field(None, description="Task priority")
 
 class EnhanceDescriptionRequest(BaseModel):
-    current_description: str = Field(..., description="Current task description in JSON block format")
-    title: str = Field(..., min_length=1, max_length=200, description="Task title")
-    enhancement_request: str = Field(..., min_length=1, max_length=500, description="What to enhance or improve")
-
-class SuggestImprovementsRequest(BaseModel):
-    title: str = Field(..., min_length=1, max_length=200, description="Task title")
-    description: str = Field(..., description="Current task description")
+    title: str = Field(..., min_length=3, max_length=200, description="Task title")
+    existing_description: str = Field(..., min_length=1, max_length=10000, description="Current task description to enhance")
+    project_id: Optional[str] = Field(None, description="Project ID for context")
+    enhancement_instructions: Optional[str] = Field(None, max_length=1000, description="Specific enhancement instructions")
+    priority: Optional[str] = Field(None, description="Task priority")

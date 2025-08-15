@@ -25,7 +25,6 @@ class OpenAIService:
                 timeout=getattr(config, 'OPENAI_TIMEOUT', 30)
             )
             self._use_client = True
-            logger.info("Using OpenAI client v1.0+")
         except ImportError:
             # Fallback to legacy API
             openai.api_key = config.OPENAI_API_KEY
@@ -83,9 +82,9 @@ class OpenAIService:
 
         return True
 
-    def _get_cache_key(self, title: str, context: Optional[Dict] = None, user_requirements: Optional[str] = None) -> str:
+    def _get_cache_key(self, title: str, context: Optional[Dict] = None, user_requirements: Optional[str] = None, enhance_type: str = "generate") -> str:
         """Generate cache key for request"""
-        content = f"{title}:{json.dumps(context, sort_keys=True) if context else ''}:{user_requirements or ''}"
+        content = f"{enhance_type}:{title}:{json.dumps(context, sort_keys=True) if context else ''}:{user_requirements or ''}"
         return hashlib.md5(content.encode()).hexdigest()
 
     def _clean_cache(self):
@@ -217,6 +216,8 @@ class OpenAIService:
             "Here is the JSON:",
             "Here's the task description:",
             "The task description in JSON format:",
+            "Here's the enhanced version:",
+            "Enhanced description:",
         ]
 
         for prefix in prefixes_to_remove:
@@ -225,6 +226,33 @@ class OpenAIService:
                 break
 
         return content.strip()
+
+    def _parse_existing_description(self, description: str) -> tuple[list, str]:
+        """Parse existing description to extract content and structure"""
+        try:
+            # Try to parse as JSON blocks first
+            blocks = json.loads(description)
+            if self._validate_blocks(blocks):
+                # Extract text content for analysis
+                text_content = []
+                for block in blocks:
+                    if block.get('content'):
+                        if block['type'] in ['heading1', 'heading2', 'heading3']:
+                            text_content.append(f"# {block['content']}")
+                        elif block['type'] == 'quote':
+                            text_content.append(f"> {block['content']}")
+                        elif block['type'] == 'code':
+                            text_content.append(f"Code: {block['content']}")
+                        else:
+                            text_content.append(block['content'])
+                
+                return blocks, '\n'.join(text_content)
+            else:
+                # Invalid blocks structure, treat as plain text
+                return [], description
+        except json.JSONDecodeError:
+            # Not JSON, treat as plain text
+            return [], description
 
     async def generate_task_description(
         self,
@@ -245,7 +273,7 @@ class OpenAIService:
                 user_requirements, max_length=1000) if user_requirements else None
 
             # Check cache first
-            cache_key = self._get_cache_key(title, context, user_requirements)
+            cache_key = self._get_cache_key(title, context, user_requirements, "generate")
             self._clean_cache()
 
             if cache_key in self._cache:
@@ -370,6 +398,169 @@ class OpenAIService:
         except Exception as e:
             logger.error(f"Error generating task description: {str(e)}")
             return self._create_fallback_blocks(f"Task: {title}\n\nPlease add a detailed description for this task.")
+
+    async def enhance_task_description(
+        self,
+        title: str,
+        existing_description: str,
+        context: Optional[Dict[str, Any]] = None,
+        enhancement_instructions: Optional[str] = None
+    ) -> str:
+        """
+        Enhance existing task description using OpenAI
+        """
+        try:
+            # Input validation and sanitization
+            if not title or not title.strip():
+                raise ValueError("Task title is required")
+            
+            if not existing_description or not existing_description.strip():
+                raise ValueError("Existing description is required for enhancement")
+
+            title = self._sanitize_input(title.strip(), max_length=200)
+            enhancement_instructions = self._sanitize_input(
+                enhancement_instructions, max_length=1000) if enhancement_instructions else None
+
+            # Check cache first
+            cache_key = self._get_cache_key(
+                f"{title}:{existing_description[:100]}", 
+                context, 
+                enhancement_instructions, 
+                "enhance"
+            )
+            self._clean_cache()
+
+            if cache_key in self._cache:
+                cached_time, result = self._cache[cache_key]
+                cache_ttl = getattr(config, 'CACHE_TTL_SECONDS', 3600)
+                if time.time() - cached_time < cache_ttl:
+                    logger.info(f"Returning cached enhanced result for task: {title}")
+                    return result
+
+            # Parse existing description
+            existing_blocks, existing_text = self._parse_existing_description(existing_description)
+
+            # Build context information
+            context_info = ""
+            if context:
+                project_name = context.get('project_name', '')
+                priority = context.get('priority', '')
+                existing_tasks = context.get('existing_tasks', [])
+
+                if project_name:
+                    context_info += f"Project: {self._sanitize_input(project_name, 100)}\n"
+                if priority and priority != TaskPriority.NO_PRIORITY.value:
+                    context_info += f"Priority: {priority}\n"
+                if existing_tasks:
+                    sanitized_tasks = [self._sanitize_input(task, 100) for task in existing_tasks[:3]]
+                    context_info += f"Related Tasks: {', '.join(sanitized_tasks)}\n"
+
+            context_block = f"Context:\n{context_info}" if context_info else ""
+            instructions_block = f"Enhancement Instructions: {enhancement_instructions}" if enhancement_instructions else ""
+
+            # Use timestamp for unique IDs in prompt
+            timestamp = int(time.time() * 1000)
+
+            # Build enhancement prompt
+            prompt = f"""
+            You are an expert project manager enhancing existing task descriptions. Improve the given task description while maintaining its core structure and adding valuable content.
+
+            Task Title: "{title}"
+            {context_block}
+            
+            Current Description Content:
+            {existing_text[:1500]}  # Limit existing text to avoid token overflow
+            
+            {instructions_block}
+
+            Enhancement Guidelines:
+            1. PRESERVE the existing structure and content that is already good
+            2. ADD missing acceptance criteria or improve existing ones
+            3. ADD technical implementation details if the task is technical
+            4. ADD quotes for important warnings, best practices, or stakeholder notes
+            5. ADD code examples for technical tasks when helpful
+            6. IMPROVE clarity and specificity of existing content
+            7. ENSURE all acceptance criteria are measurable and testable
+            8. MAINTAIN professional tone and actionable content
+
+            CRITICAL: Return ONLY a valid JSON array of blocks. No markdown, no explanations, no additional text.
+
+            Enhancement focus areas:
+            - Add missing acceptance criteria
+            - Improve vague requirements to be more specific
+            - Add technical implementation guidance
+            - Include relevant code examples
+            - Add important warnings or best practices as quotes
+            - Ensure proper structure with headings and bullet points
+
+            Format example:
+            [
+            {{"id": "block-{timestamp}", "type": "paragraph", "content": "Enhanced overview explaining what needs to be done with more detail...", "position": 0}},
+            {{"id": "block-{timestamp + 1}", "type": "heading2", "content": "Acceptance Criteria", "position": 1}},
+            {{"id": "block-{timestamp + 2}", "type": "bulletList", "content": "Enhanced and more specific criterion", "position": 2}},
+            {{"id": "block-{timestamp + 3}", "type": "heading2", "content": "Technical Implementation", "position": 3}},
+            {{"id": "block-{timestamp + 4}", "type": "code", "content": "// Example implementation\\nconst example = () => {{\\n  // Added implementation details\\n}}", "position": 4}},
+            {{"id": "block-{timestamp + 5}", "type": "quote", "content": "Important: Added best practice or warning", "position": 5}}
+            ]
+
+            Available block types: paragraph, heading1, heading2, heading3, quote, code, bulletList, numberedList
+
+            Requirements:
+            - Enhance clarity and specificity
+            - Add missing details and requirements
+            - Include code examples for technical tasks
+            - Add quotes for important notes
+            - Keep enhancements relevant and valuable
+            - Maintain professional project management standards
+            """
+
+            content = await self._make_openai_request(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert project manager. Enhance existing task descriptions by adding valuable content while preserving good existing structure. Return ONLY valid JSON arrays with no additional text, markdown, or formatting."
+                    },
+                    {"role": "user", "content": prompt}
+                ],
+                model=getattr(config, 'OPENAI_DEFAULT_MODEL', 'gpt-4'),
+                max_tokens=getattr(config, 'OPENAI_MAX_TOKENS', 2500),
+                temperature=getattr(config, 'OPENAI_TEMPERATURE', 0.6)  # Slightly lower temperature for enhancement
+            )
+
+            # Clean response content
+            content = self._clean_response_content(content)
+
+            # Try to parse the JSON response
+            try:
+                blocks = json.loads(content)
+
+                if self._validate_blocks(blocks):
+                    # Sanitize and ensure proper structure
+                    sanitized_blocks = self._sanitize_blocks(blocks)
+                    result = json.dumps(sanitized_blocks)
+
+                    # Cache the result
+                    self._cache[cache_key] = (time.time(), result)
+
+                    logger.info(f"Successfully enhanced task description for: {title}")
+                    return result
+                else:
+                    logger.warning(f"Invalid block structure from OpenAI enhancement: {content[:200]}...")
+                    # Return original description if enhancement fails
+                    return existing_description
+
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse OpenAI enhancement response as JSON: {e}\nContent preview: {content[:200]}...")
+                # Return original description if enhancement fails
+                return existing_description
+
+        except ValueError as e:
+            logger.error(f"Enhancement validation error: {str(e)}")
+            raise e
+        except Exception as e:
+            logger.error(f"Error enhancing task description: {str(e)}")
+            # Return original description if enhancement fails
+            return existing_description
 
 
 # Create singleton instance
