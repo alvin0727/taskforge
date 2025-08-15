@@ -7,7 +7,6 @@ from .task import Task, TaskCreate, TaskUpdate
 from .activity import Activity, ActivityCreate
 from .notification import Notification, NotificationCreate, NotificationUpdate
 from .calendar import CalendarEvent, CalendarEventCreate, CalendarEventUpdate
-from .analytics import ProjectStats, UserStats, DashboardStats
 from .favorites import UserFavorite, FavoriteCreate
 
 __all__ = [
@@ -29,8 +28,6 @@ __all__ = [
     "Notification", "NotificationCreate", "NotificationUpdate",
     # Calendar models
     "CalendarEvent", "CalendarEventCreate", "CalendarEventUpdate",
-    # Analytics models
-    "ProjectStats", "UserStats", "DashboardStats",
     # Favorites models
     "UserFavorite", "FavoriteCreate"
 

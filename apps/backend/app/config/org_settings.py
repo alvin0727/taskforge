@@ -12,7 +12,8 @@ DEFAULT_ORG_SETTINGS = {
     },
     "permissions": {
         "who_can_create_projects": "admin_and_managers",
-        "who_can_invite_members": "admin_only"
+        "who_can_invite_members": "admin_only",
+        "view": "all_members"
     }
 }
 

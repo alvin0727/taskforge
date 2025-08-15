@@ -61,9 +61,6 @@ async def ensure_indexes():
     await db["calendar_events"].create_index("project_id")
     await db["calendar_events"].create_index("creator_id")
     await db["calendar_events"].create_index("attendees")
-
-    # Stats indexes
-    await db["project_stats"].create_index([("project_id", 1), ("date", 1)], unique=True)
     
     # Favorites indexes
     await db["user_favorites"].create_index([("user_id", 1), ("item_type", 1), ("item_id", 1)], unique=True)

@@ -9,22 +9,17 @@ import {
   X,
   Home,
   Kanban,
-  CheckSquare,
-  GitBranch,
   Users,
   Calendar,
   BarChart3,
-  Settings,
   Plus,
   Search,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   Archive,
   Star,
   Clock,
   Target,
-  Building2
 } from "lucide-react";
 import { useOrganizationStore } from "@/stores/organizationStore";
 import organizationService from "@/services/organization/organizationService";
@@ -50,7 +45,7 @@ const navLinks = [
   { name: "Board", href: "/organization/board", icon: Kanban, iconColor: "text-purple-400" },
   { name: "Team", href: "/team", icon: Users, iconColor: "text-pink-400" },
   { name: "Calendar", href: "/protected/calendar", icon: Calendar, iconColor: "text-red-400" },
-  { name: "Analytics", href: "/protected/analytics", icon: BarChart3, iconColor: "text-cyan-400" },
+  { name: "Activity", href: "/protected/activity", icon: BarChart3, iconColor: "text-cyan-400" },
 ];
 
 const quickActions = [
@@ -59,9 +54,7 @@ const quickActions = [
 ];
 
 const favorites = [
-  { name: "Sprint Planning", href: "/protected/sprint", icon: Clock, iconColor: "text-yellow-400" },
   { name: "Archived Projects", href: "/project/archived", icon: Archive, iconColor: "text-gray-400" },
-  { name: "Starred Items", href: "/protected/starred", icon: Star, iconColor: "text-amber-400" },
 ];
 
 export default function Sidebar() {
