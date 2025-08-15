@@ -297,7 +297,7 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
             // Set cursor to end
             const length = textareaRef.current.value.length;
             textareaRef.current.setSelectionRange(length, length);
-            
+
             // Auto-resize textarea
             const adjustHeight = () => {
                 if (textareaRef.current) {
@@ -319,7 +319,7 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
         const newContent = (e.target as HTMLTextAreaElement).value;
         setLocalContent(newContent);
         onContentChange(block.id, newContent);
-        
+
         // Auto-resize
         const textarea = e.target as HTMLTextAreaElement;
         textarea.style.height = 'auto';
@@ -352,13 +352,13 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
             setIsCodeEditing(false);
             return;
         }
-        
+
         // Allow normal textarea behavior for other keys
         if (e.key === 'Enter' && !e.shiftKey) {
             // Don't prevent default for code blocks - allow new lines
             return;
         }
-        
+
         // Pass other keys to parent handler
         onKeyDown(e, block.id);
     }, [block.id, onKeyDown]);
@@ -397,7 +397,7 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                 </div>
 
                 {/* Block Content Container */}
-                <div className={`flex-1 min-w-78 relative rounded-sm ${isActive ? 'bg-neutral-700/40' : ''}`}>
+                <div className={`flex-1 min-w-0 relative rounded-sm ${isActive ? 'bg-neutral-700/40' : ''}`}>
                     <div ref={blockRef} className="relative">
                         {block.type === 'bulletList' && localContent && (
                             <div className="absolute left-1.5 sm:left-2 top-3 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-neutral-400 rounded-full"></div>
@@ -424,7 +424,7 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                                             minHeight: '60px',
                                             margin: 0,
                                             borderRadius: '0.375rem',
-                                            fontSize: '0.7em',
+                                            fontSize: isMobile ? '0.75rem' : '0.875rem',
                                             fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
                                             backgroundColor: '#1e1e1e',
                                             color: '#d4d4d4',
@@ -447,7 +447,7 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
                                                 minHeight: '60px',
                                                 margin: 0,
                                                 borderRadius: '0.375rem',
-                                                fontSize: '0.7em',
+                                                fontSize: isMobile ? '0.65rem' : '0.875rem',
                                                 overflowX: 'auto',
                                             }}
                                         >

@@ -4,28 +4,25 @@ import { useEffect, useState } from "react";
 import { useOrganizationStore } from "@/stores/organizationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { ProjectMember } from "@/lib/types/project";
-import { OrganizationMember } from "@/lib/types/organization";
+import { OrganizationInviteRequest, OrganizationMember } from "@/lib/types/organization";
 import projectService from "@/services/projects/projectService";
 import organizationService from "@/services/organization/organizationService";
 import Loading from "@/components/layout/LoadingPage";
+import InviteMemberModal from "@/components/ui/organization/InviteMember";
 import {
     Users,
     Mail,
-    Crown,
     Clock,
     Search,
     Filter,
     ChevronLeft,
     ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
     Plus,
     X,
     UserPlus,
-    MoreVertical,
-    ChevronDown
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getAxiosErrorMessage } from "@/utils/errorMessage";
 
 function isUrl(str?: string) {
     return !!str && (str.startsWith("http://") || str.startsWith("https://"));
@@ -56,6 +53,7 @@ export default function TeamPage() {
     const orgMembers = useOrganizationStore((state) => state.members);
     const activeOrg = useOrganizationStore((state) => state.activeOrg);
     const setMembers = useOrganizationStore((state) => state.setMembers);
+    const [inviteOpen, setInviteOpen] = useState(false);
 
     // Project
     const projects = useProjectStore((state) => state.projects);
@@ -153,6 +151,18 @@ export default function TeamPage() {
             }
         });
     }, [projects, activeOrg, setProjectMembers, projectMembersMap, loading.projects]);
+
+    // Handler for invite member organization
+    const handleInviteMember = async (data: OrganizationInviteRequest) => {
+        if (!activeOrg?.id) return;
+        try {
+            const response = await organizationService.inviteMember(activeOrg.id, data);
+            toast.success(response.message || "Invitation sent successfully!");
+        } catch (error) {
+            const errMsg = getAxiosErrorMessage(error);
+            toast.error(errMsg);
+        }
+    };
 
     // Filter members based on search term
     const filterMembers = (members: (OrganizationMember | ProjectMember)[]) => {
@@ -685,12 +695,27 @@ export default function TeamPage() {
                                     {filteredOrgMembers.length}
                                 </span>
                             </div>
-                            {loading.organization && (
-                                <div className="flex-shrink-0">
-                                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                                </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {loading.organization && (
+                                    <div className="flex-shrink-0">
+                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={() => setInviteOpen(true)}
+                                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex-shrink-0"
+                                >
+                                    <Plus size={16} />
+                                    <span className="hidden sm:inline">Invite Member</span>
+                                    <span className="sm:hidden">Invite</span>
+                                </button>
+                            </div>
                         </div>
+                        <InviteMemberModal
+                            isOpen={inviteOpen}
+                            onClose={() => setInviteOpen(false)}
+                            onInvite={handleInviteMember}
+                        />
 
                         <MemberTable
                             members={filteredOrgMembers}

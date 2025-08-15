@@ -29,3 +29,8 @@ export interface OrganizationMember {
   status?: string;
   joined_at?: string;
 }
+
+export interface OrganizationInviteRequest{
+  email: string;
+  message: string;
+}
