@@ -1,5 +1,5 @@
 import organization_adapter from "@/adapters/api/organizationAdapter";
-import { OrganizationInviteRequest, OrganizationMember } from "@/lib/types/organization";
+import { GetOrganizationTasksRequest, GetOrganizationTasksResponse, OrganizationInviteRequest, OrganizationMember } from "@/lib/types/organization";
 
 export async function getInvitationDetails(token: string): Promise<any> {
     const res = await organization_adapter.getInvitationDetails(token);
@@ -31,11 +31,17 @@ export async function getOrganizationMembers(orgSlug: string): Promise<{ members
     return res;
 }
 
+export async function getOrganizationTask(orgId: string, data: GetOrganizationTasksRequest): Promise<GetOrganizationTasksResponse> {
+    const res = await organization_adapter.getOrganizationTask(orgId, data);
+    return res;
+}
+
 export default {
     getInvitationDetails,
     acceptInvitation,
     getMyOrganizations,
     switchOrganization,
     getOrganizationMembers,
-    inviteMember
+    inviteMember,
+    getOrganizationTask
 };

@@ -67,6 +67,7 @@ export default function InviteMemberModal({ isOpen, onClose, onInvite }: {
                 paddingTop: topMargin,
                 paddingBottom: bottomPadding,
             }}
+            onClick={onClose}
         >
             {/* Mobile: Full height on small screens, centered on larger screens */}
             <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-md overflow-hidden flex flex-col 

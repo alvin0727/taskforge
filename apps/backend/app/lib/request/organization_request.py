@@ -1,6 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, Dict, Any
-from app.db.enums import UserRole
+from app.db.enums import TaskPriority, TaskStatus, UserRole
 
 
 class CreateTeamOrganizationRequest(BaseModel):
@@ -13,4 +13,12 @@ class InviteMemberRequest(BaseModel):
     role: UserRole = UserRole.MEMBER
     message: Optional[str] = None
 
-
+    
+class GetOrganizationTasksRequest(BaseModel):
+    project_id: Optional[str] = Field(None, description="Filter by specific project ID")
+    limit: int = Field(20, ge=1, le=100, description="Number of tasks per page")
+    offset: int = Field(0, ge=0, description="Number of tasks to skip")
+    search: Optional[str] = Field(None, description="Search tasks by title ")
+    status: Optional[TaskStatus] = Field(None, description="Filter by task status")
+    priority: Optional[TaskPriority] = Field(None, description="Filter by task priority")
+    assignee_id: Optional[str] = Field(None, description="Filter by assignee ID")

@@ -1,4 +1,4 @@
-export interface InvitationInfo  {
+export interface InvitationInfo {
   email: string;
   organization_name: string;
   role: string;
@@ -30,7 +30,38 @@ export interface OrganizationMember {
   joined_at?: string;
 }
 
-export interface OrganizationInviteRequest{
+export interface OrganizationInviteRequest {
   email: string;
   message: string;
+}
+
+export interface GetOrganizationTasksRequest {
+  project_id?: string;
+  assignee_id?: string;
+  status?: string;
+  search?: string;
+  priority?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface OrganizationTask {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  project: string;
+  assignee: string;
+  project_color: string;
+  due_date: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface GetOrganizationTasksResponse {
+  tasks: OrganizationTask[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 }

@@ -1,5 +1,5 @@
 import api from "@/lib/axios";
-import { OrganizationInviteRequest, OrganizationMember } from "@/lib/types/organization";
+import { GetOrganizationTasksRequest, GetOrganizationTasksResponse, OrganizationInviteRequest, OrganizationMember } from "@/lib/types/organization";
 
 export async function getInvitationDetails(token: string): Promise<any> {
   const res = await api.get(`/organizations/invitations/${token}`);
@@ -31,6 +31,11 @@ export async function getOrganizationMembers(orgId: string): Promise<{ members: 
   return res.data;
 }
 
+export async function getOrganizationTask(orgId: String, data: GetOrganizationTasksRequest): Promise<GetOrganizationTasksResponse> {
+  const res = await api.post(`/organizations/${orgId}/tasks/search`, data);
+  return res.data;
+}
+
 export default {
   getInvitationDetails,
   acceptInvitation,
@@ -38,4 +43,5 @@ export default {
   getMyOrganizations,
   switchOrganization,
   getOrganizationMembers,
+  getOrganizationTask
 };

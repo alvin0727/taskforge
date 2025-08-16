@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Calendar,
   CheckSquare,
   Clock,
   Users,
@@ -36,6 +35,7 @@ import TaskFormDashboard from "@/components/ui/task/TaskFormDashboard";
 
 function DashboardInner() {
   const user = useUserStore((state) => state.user);
+  const router = useRouter();
   const activeOrg = useOrganizationStore((state) => state.activeOrg);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
@@ -357,7 +357,7 @@ function DashboardInner() {
                   )}
                 </div>
 
-                <button className="w-full mt-4 p-3 text-center text-neutral-400 hover:text-blue-400 hover:bg-neutral-800/50 rounded-lg transition-colors border border-dashed border-neutral-700 hover:border-blue-400/50 text-sm sm:text-base">
+                <button onClick={() => router.push('/organization/task')} className="w-full mt-4 p-3 text-center text-neutral-400 hover:text-blue-400 hover:bg-neutral-800/50 rounded-lg transition-colors border border-dashed border-neutral-700 hover:border-blue-400/50 text-sm sm:text-base">
                   View All Tasks
                 </button>
               </div>
@@ -483,11 +483,11 @@ function DashboardInner() {
                 </div>
 
                 <div className="space-y-2">
-                  <button onClick={() => setShowTaskForm(true)} className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
+                  <button onClick={() => setShowTaskForm((v) => !v)} className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
                     <Plus size={16} className="text-blue-400 flex-shrink-0" />
                     <span className="text-sm">Create New Task</span>
                   </button>
-                  <button onClick={() => setInviteOpen(true)} className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
+                  <button onClick={() => setInviteOpen((v) => !v)} className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
                     <Users size={16} className="text-green-400 flex-shrink-0" />
                     <span className="text-sm">Invite Team Member</span>
                   </button>

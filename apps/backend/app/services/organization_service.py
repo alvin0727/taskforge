@@ -354,14 +354,15 @@ class OrganizationService:
         parts = name.strip().split()
         initials = "".join([p[0].upper() for p in parts if p])
         return initials[:2]
-    
+
     @staticmethod
     async def get_organization_members_by_slug(org_slug: str) -> List[Dict[str, Any]]:
         """Get all members of an organization by slug, including role, status, joined_at"""
         try:
             organization = await db["organizations"].find_one({"slug": org_slug})
             if not organization:
-                raise HTTPException(status_code=404, detail="Organization not found")
+                raise HTTPException(
+                    status_code=404, detail="Organization not found")
 
             org_id = organization["_id"]
             member_ids = organization.get("members", [])
@@ -370,7 +371,8 @@ class OrganizationService:
             for m in members:
                 # Search for user's organization info
                 user_org_info = next(
-                    (org for org in m.get("organizations", []) if org.get("organization_id") == org_id),
+                    (org for org in m.get("organizations", [])
+                     if org.get("organization_id") == org_id),
                     {}
                 )
                 result.append({
@@ -386,4 +388,207 @@ class OrganizationService:
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Failed to get organization members: {str(e)}"
+            )
+
+    @staticmethod
+    async def get_organization_tasks(
+        user_id: ObjectId,
+        organization_id: ObjectId,
+        project_id: Optional[ObjectId] = None,
+        search: Optional[str] = None,
+        limit: int = 20,
+        offset: int = 0,
+        status: Optional[str] = None,
+        priority: Optional[str] = None,
+        assignee_id: Optional[ObjectId] = None
+    ) -> Dict[str, Any]:
+        """Get all tasks in organization with pagination and filtering"""
+        try:
+            # Verify user has access to organization
+            user = await db["users"].find_one({"_id": user_id})
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            user_orgs = user.get("organizations", [])
+            is_org_member = any(
+                org["organization_id"] == organization_id
+                and org.get("status") == "active"
+                for org in user_orgs
+            )
+
+            if not is_org_member:
+                raise HTTPException(
+                    status_code=403,
+                    detail="User not member of organization or access denied"
+                )
+
+            # Build aggregation pipeline
+            pipeline = []
+
+            # Match stage - base filter
+            match_filter = {
+                "archived": False
+            }
+
+            # If specific project_id provided, filter by it
+            if project_id:
+                match_filter["project_id"] = project_id
+            else:
+                # Get all projects in organization that user is member of
+                user_project_ids = []
+                user_projects = user.get("joined_projects", [])
+                for proj in user_projects:
+                    if proj.get("status") == "active":
+                        # Verify project belongs to organization
+                        project = await db["projects"].find_one({
+                            "_id": proj["project_id"],
+                            "organization_id": organization_id
+                        })
+                        if project:
+                            user_project_ids.append(proj["project_id"])
+
+                if not user_project_ids:
+                    return {
+                        "tasks": [],
+                        "total": 0,
+                        "limit": limit,
+                        "offset": offset,
+                        "has_more": False
+                    }
+
+                match_filter["project_id"] = {"$in": user_project_ids}
+
+            # Add search filter for task title
+            if search and search.strip():
+                # Case-insensitive search using regex
+                match_filter["title"] = {
+                    "$regex": search.strip(),
+                    "$options": "i"  # Case-insensitive
+                }
+
+            # Apply additional filters
+            if status:
+                match_filter["status"] = status
+            if priority:
+                match_filter["priority"] = priority
+            if assignee_id:
+                match_filter["assignee_id"] = assignee_id
+
+            pipeline.append({"$match": match_filter})
+
+            # Lookup project details
+            pipeline.append({
+                "$lookup": {
+                    "from": "projects",
+                    "localField": "project_id",
+                    "foreignField": "_id",
+                    "as": "project_info"
+                }
+            })
+
+            # Lookup assignee details
+            pipeline.append({
+                "$lookup": {
+                    "from": "users",
+                    "localField": "assignee_id",
+                    "foreignField": "_id",
+                    "as": "assignee_info"
+                }
+            })
+
+            # Add project and assignee data
+            pipeline.append({
+                "$addFields": {
+                    "project_name": {"$arrayElemAt": ["$project_info.name", 0]},
+                    "project_color": {"$arrayElemAt": ["$project_info.color", 0]},
+                    "assignee_name": {"$arrayElemAt": ["$assignee_info.name", 0]}
+                }
+            })
+
+            # Sort by updated_at descending (or by relevance if search is provided)
+            if search and search.strip():
+                # Add text relevance scoring for better search results
+                pipeline.append({
+                    "$addFields": {
+                        "search_score": {
+                            "$cond": {
+                                "if": {"$regexMatch": {"input": "$title", "regex": f"^{search.strip()}", "options": "i"}},
+                                "then": 3,  # Higher score for titles starting with search term
+                                "else": {
+                                    "$cond": {
+                                        "if": {"$regexMatch": {"input": "$title", "regex": search.strip(), "options": "i"}},
+                                        "then": 1,  # Lower score for titles containing search term
+                                        "else": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+                pipeline.append({"$sort": {"search_score": -1, "updated_at": -1}})
+            else:
+                pipeline.append({"$sort": {"updated_at": -1}})
+
+            # Get total count for pagination (before skip/limit)
+            count_pipeline = pipeline.copy()
+            count_pipeline.append({"$count": "total"})
+            count_result = await db["tasks"].aggregate(count_pipeline).to_list(length=None)
+            total = count_result[0]["total"] if count_result else 0
+
+            # Add pagination
+            pipeline.extend([
+                {"$skip": offset},
+                {"$limit": limit}
+            ])
+
+            # Project only needed fields
+            pipeline.append({
+                "$project": {
+                    "_id": 1,
+                    "title": 1,
+                    "status": 1,
+                    "priority": 1,
+                    "project_name": 1,
+                    "project_color": 1,
+                    "assignee_name": 1,
+                    "due_date": 1,
+                    "created_at": 1,
+                    "updated_at": 1
+                }
+            })
+
+            # Execute aggregation
+            tasks = await db["tasks"].aggregate(pipeline).to_list(length=None)
+
+            # Format response
+            formatted_tasks = []
+            for task in tasks:
+                formatted_tasks.append({
+                    "id": str(task["_id"]),
+                    "title": task["title"],
+                    "status": task["status"],
+                    "priority": task["priority"],
+                    "project": task.get("project_name", ""),
+                    "assignee": task.get("assignee_name", ""),
+                    "project_color": task.get("project_color", "#6B7280"),
+                    "due_date": task.get("due_date"),
+                    "created_at": task["created_at"],
+                    "updated_at": task["updated_at"]
+                })
+
+            return {
+                "tasks": formatted_tasks,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + limit < total
+            }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get organization tasks: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get organization tasks: {str(e)}"
             )

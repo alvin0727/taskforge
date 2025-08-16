@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Depends, Query
 from datetime import datetime
 from bson import ObjectId
 from app.services.organization_service import OrganizationService
@@ -217,3 +218,31 @@ async def get_organization_members(
     members = await OrganizationService.get_organization_members_by_slug(org["slug"])
 
     return { "members": members }
+
+@router.post("/{org_id}/tasks/search")
+async def search_organization_tasks(
+    org_id: str,
+    request: org_req.GetOrganizationTasksRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Search/filter tasks in organization with request body (POST method)"""
+    user_id = ObjectId(current_user["id"])
+    organization_id = ObjectId(org_id)
+    
+    # Convert project_id and assignee_id to ObjectId if provided
+    project_obj_id = ObjectId(request.project_id) if request.project_id else None
+    assignee_obj_id = ObjectId(request.assignee_id) if request.assignee_id else None
+    
+    result = await OrganizationService.get_organization_tasks(
+        user_id=user_id,
+        organization_id=organization_id,
+        project_id=project_obj_id,
+        limit=request.limit,
+        search=request.search,
+        offset=request.offset,
+        status=request.status,
+        priority=request.priority,
+        assignee_id=assignee_obj_id
+    )
+    
+    return result
