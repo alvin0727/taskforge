@@ -38,7 +38,7 @@ function LoginInner() {
                     if (invitationToken) {
                         router.push(`/?invitationToken=${invitationToken}`);
                     } else {
-                        router.push("/");
+                        router.push("/dashboard");
                     }
                 }
             } catch (error) {
@@ -126,7 +126,7 @@ function LoginInner() {
             if (invitationToken) {
                 router.push(`/?invitationToken=${invitationToken}`);
             } else {
-                router.push("/");
+                router.push("/dashboard");
             }
         } catch (err) {
             const message = getAxiosErrorMessage(err);

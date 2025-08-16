@@ -43,7 +43,7 @@ function SignupPageInner() {
             try {
                 const profile = await userService.getProfile();
                 if (profile && isMounted) {
-                    router.replace("/");
+                    router.replace("/dashboard");
                 }
             } catch (error) {
                 // Not authenticated, continue with signup

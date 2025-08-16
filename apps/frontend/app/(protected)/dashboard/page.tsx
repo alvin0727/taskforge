@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar,
   CheckSquare,
@@ -27,7 +27,6 @@ import Loading from "@/components/layout/LoadingPage";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
 
 function DashboardInner() {
-  const router = useRouter();
   const user = useUserStore((state) => state.user);
   const activeOrg = useOrganizationStore((state) => state.activeOrg);
   const {
@@ -255,12 +254,6 @@ function DashboardInner() {
               <div className="bg-neutral-900 border border-neutral-800 rounded-lg sm:rounded-xl p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
                   <h2 className="text-lg sm:text-xl font-semibold text-white">Recent Tasks</h2>
-                  <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors w-full sm:w-auto justify-center">
-                      <Plus size={16} />
-                      <span className="sm:inline">New Task</span>
-                    </button>
-                  </div>
                 </div>
 
                 <div className="space-y-3 sm:space-y-4">

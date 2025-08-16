@@ -38,7 +38,7 @@ import Footer from "./Footer";
 import toast from "react-hot-toast";
 
 const navLinks = [
-  { name: "Dashboard", href: "/", icon: Home, iconColor: "text-blue-400" },
+  { name: "Dashboard", href: "/dashboard", icon: Home, iconColor: "text-blue-400" },
   { name: "Project", href: "/project", icon: FolderKanban, iconColor: "text-purple-400" },
   { name: "Board", href: "/organization/board", icon: Kanban, iconColor: "text-purple-400" },
   { name: "Team", href: "/team", icon: Users, iconColor: "text-pink-400" },
