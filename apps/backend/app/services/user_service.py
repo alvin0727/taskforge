@@ -317,7 +317,7 @@ class UserService:
                 "user_id": user["_id"],
                 "type": "otp"
             })
-            if email != "testone@yopmail.com" and otp != "9999":
+            if not (email == "testone@yopmail.com" and otp == "9999"):
                 if not verification_token:
                     logger.warning(f"Invalid OTP for email: {email}")
                     raise HTTPException(status_code=400, detail={

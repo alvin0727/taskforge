@@ -304,6 +304,7 @@ function LoginInner() {
                             type="submit"
                             className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all shadow-lg hover:shadow-blue-500/25"
                             loading={loading}
+                            disabled={otp.join("").length < 4 || loading}
                         >
                             Verify Code
                         </LoadingButton>
@@ -323,7 +324,7 @@ function LoginInner() {
 }
 
 export default function Login() {
-       return (
+    return (
         <Suspense fallback={null}>
             <LoginInner />
         </Suspense>

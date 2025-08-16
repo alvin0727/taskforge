@@ -487,7 +487,7 @@ function TaskDetailPageInner() {
     }
 
     return (
-        <div className="min-h-screen bg-neutral-900 pt-16 sm:pt-2">
+        <div className="min-h-screen pt-16 sm:pt-2">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
                 <div className="grid grid-cols-1 gap-4 sm:gap-8">
                     <div className="space-y-4 sm:space-y-8">
