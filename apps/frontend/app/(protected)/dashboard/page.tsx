@@ -19,18 +19,28 @@ import { useUserStore } from "@/stores/userStore";
 import { useOrganizationStore } from "@/stores/organizationStore";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import AcceptInvitationModal from "@/components/layout/AcceptInvitationModal";
-import { InvitationInfo } from "@/lib/types/organization";
+import { InvitationInfo, OrganizationInviteRequest } from "@/lib/types/organization";
 import organizationService from "@/services/organization/organizationService";
 import dashboardService from "@/services/dashboard/dashboardService";
 import toast from "react-hot-toast";
 import Loading from "@/components/layout/LoadingPage";
+import InviteMemberModal from "@/components/ui/organization/InviteMember";
+import ProjectForm from "@/components/ui/project/ProjectForm";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
+import { RequestCreateProject } from "@/lib/types/project";
+import projectService from "@/services/projects/projectService";
+import { RequestTaskCreate } from "@/lib/types/task";
+import { useTaskStore } from "@/stores/taskStore";
+import taskService from "@/services/task/taskService";
+import TaskFormDashboard from "@/components/ui/task/TaskFormDashboard";
 
 function DashboardInner() {
   const user = useUserStore((state) => state.user);
   const activeOrg = useOrganizationStore((state) => state.activeOrg);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [projectFormLoading, setProjectFormLoading] = useState(false);
   const {
-    dashboardData,
     setDashboardData,
     getStats,
     getRecentTasks,
@@ -44,6 +54,9 @@ function DashboardInner() {
   const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskFormLoading, setTaskFormLoading] = useState(false);
+  const { setTasks } = useTaskStore();
 
   // Get time-based greeting
   const getGreeting = () => {
@@ -145,6 +158,61 @@ function DashboardInner() {
       case 'in progress': return 'bg-yellow-500';
       case 'at risk': return 'bg-red-500';
       default: return 'bg-neutral-500';
+    }
+  };
+
+  const handleInviteMember = async (data: OrganizationInviteRequest) => {
+    if (!activeOrg?.id) return;
+    try {
+      const response = await organizationService.inviteMember(activeOrg.id, data);
+      toast.success(response.message || "Invitation sent successfully.");
+    } catch (error) {
+      const errMsg = getAxiosErrorMessage(error);
+      toast.error(errMsg);
+    }
+  }
+
+  const handleCreateProject = async (data: RequestCreateProject) => {
+    setProjectFormLoading(true);
+    try {
+      const response = await projectService.createNewProject(data);
+      return response.project; // Return the created project
+    } catch (error) {
+      throw error;
+    } finally {
+      setProjectFormLoading(false);
+    }
+  }
+
+
+  // Handler submit task
+  const handleCreateTask = async (data: RequestTaskCreate) => {
+    setTaskFormLoading(true);
+    try {
+      const payload: RequestTaskCreate = {
+        ...data,
+      };
+      const response = await taskService.createNewTask(payload);
+      const newTask = response.task;
+
+      if (!newTask) {
+        throw new Error("Failed to create task");
+      }
+      console.log("New task created:", newTask);
+
+      const existingTasks = useTaskStore.getState().tasks;
+      const hasSameBoard = existingTasks.some(t => t.board_id === newTask.board_id);
+
+      if (hasSameBoard) {
+        setTasks([...existingTasks, newTask]);
+      }
+
+      toast.success("Task created successfully");
+      setShowTaskForm(false);
+    } catch (err) {
+      toast.error("Failed to create task");
+    } finally {
+      setTaskFormLoading(false);
     }
   };
 
@@ -415,21 +483,17 @@ function DashboardInner() {
                 </div>
 
                 <div className="space-y-2">
-                  <button className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
+                  <button onClick={() => setShowTaskForm(true)} className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
                     <Plus size={16} className="text-blue-400 flex-shrink-0" />
                     <span className="text-sm">Create New Task</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
+                  <button onClick={() => setInviteOpen(true)} className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
                     <Users size={16} className="text-green-400 flex-shrink-0" />
                     <span className="text-sm">Invite Team Member</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
+                  <button onClick={() => setNewProjectOpen(true)} className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
                     <Target size={16} className="text-purple-400 flex-shrink-0" />
                     <span className="text-sm">Start New Project</span>
-                  </button>
-                  <button className="w-full flex items-center gap-3 p-3 text-left text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors">
-                    <Calendar size={16} className="text-orange-400 flex-shrink-0" />
-                    <span className="text-sm">Schedule Meeting</span>
                   </button>
                 </div>
               </div>
@@ -443,6 +507,31 @@ function DashboardInner() {
         invitationToken={invitationToken ?? ""}
         invitationInfo={invitationInfo ?? undefined}
       />
+      <InviteMemberModal
+        isOpen={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onInvite={handleInviteMember}
+      />
+
+      {newProjectOpen && (
+        <ProjectForm
+          onClose={() => setNewProjectOpen(false)}
+          onSubmit={handleCreateProject}
+          loading={projectFormLoading}
+        />
+      )}
+
+      {/* Modal TaskForm */}
+      {showTaskForm && (
+        <TaskFormDashboard
+          onSubmit={handleCreateTask}
+          loading={taskFormLoading}
+          onClose={() => {
+            setShowTaskForm(false);
+          }}
+        />
+      )}
+
     </>
   );
 }

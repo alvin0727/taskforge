@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import LoadingButton from "../loading/LoadingButton";
 import { getAxiosErrorMessage } from "@/utils/errorMessage";
 import { toast } from "react-hot-toast";
 import { OrganizationInviteRequest } from "@/lib/types/organization";
+import { useSidebarStore } from "@/stores/sidebarStore";
 
 export default function InviteMemberModal({ isOpen, onClose, onInvite }: {
     isOpen: boolean;
@@ -16,8 +17,34 @@ export default function InviteMemberModal({ isOpen, onClose, onInvite }: {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
 
-    if (!isOpen) return null;
+    // Helper to get sidebar margin (responsive, SSR safe)
+    const sidebarHidden = useSidebarStore((state) => state.hidden);
+    const [sidebarMargin, setSidebarMargin] = useState('0');
+    const [topMargin, setTopMargin] = useState('0');
+    const [bottomPadding, setBottomPadding] = useState('0');
+    const [isMobile, setIsMobile] = useState(false);
 
+    useEffect(() => {
+        // Set margin and padding on client only
+        function updateMargin() {
+            if (window.innerWidth >= 768) {
+                setSidebarMargin(sidebarHidden ? '4rem' : '18rem');
+                setTopMargin('100px');
+                setBottomPadding('0');
+                setIsMobile(false);
+            } else {
+                setSidebarMargin('0');
+                setTopMargin('56px');
+                setBottomPadding('56px');
+                setIsMobile(true);
+            }
+        }
+        updateMargin();
+        window.addEventListener('resize', updateMargin);
+        return () => window.removeEventListener('resize', updateMargin);
+    }, [sidebarHidden]);
+
+    if (!isOpen) return null;
     const handleInvite = async () => {
         setLoading(true);
         try {
@@ -34,16 +61,22 @@ export default function InviteMemberModal({ isOpen, onClose, onInvite }: {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 transition-all duration-300"
+            style={{
+                marginLeft: sidebarMargin,
+                paddingTop: topMargin,
+                paddingBottom: bottomPadding,
+            }}
+        >
             {/* Mobile: Full height on small screens, centered on larger screens */}
             <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-md overflow-hidden flex flex-col 
                            min-h-[50vh] sm:min-h-0 max-h-[90vh] sm:max-h-none">
-                
+
                 {/* Header - Enhanced touch targets for mobile */}
                 <div className="flex items-center justify-between p-4 sm:p-6 border-b border-neutral-800 shrink-0">
                     <h2 className="text-lg sm:text-xl font-semibold text-white">Invite Member</h2>
-                    <button 
-                        onClick={onClose} 
+                    <button
+                        onClick={onClose}
                         className="p-3 sm:p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors touch-manipulation"
                         aria-label="Close modal"
                     >

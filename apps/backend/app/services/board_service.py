@@ -466,6 +466,7 @@ class BoardService:
                     "title": task["title"],
                     "status": task["status"],
                     "priority": task["priority"],
+                    "board_id": str(task["board_id"]) if task.get("board_id") else None,
                     "project_id": str(task["project_id"]) if task.get("project_id") else None,
                     "assignee_id": str(task["assignee_id"]) if task.get("assignee_id") else None,
                     "due_date": task.get("due_date"),

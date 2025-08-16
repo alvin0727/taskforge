@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { TaskPriority, RequestTaskCreate } from "@/lib/types/task";
-import { Plus, Calendar, User, Clock, Tag, X, ChevronDown, Signal, SignalHigh, SignalMedium, SignalLow, Minus } from "lucide-react";
+import { Plus, Calendar, User, Clock, Tag, X, Signal, SignalHigh, SignalMedium, SignalLow, Minus } from "lucide-react";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import LoadingButton from "@/components/ui/loading/LoadingButton";
 import DatePicker from "react-datepicker";

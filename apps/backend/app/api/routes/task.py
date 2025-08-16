@@ -174,34 +174,34 @@ async def get_task(
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-@router.post("/generate-dummy-tasks")
-async def generate_dummy_tasks(
-    project_id: str,
-    board_id: str,
-    num_tasks: int = 10,
-    current_user: str = Depends(get_current_user)
-):
-    """
-    Generate dummy tasks for testing.
-    All project members can generate dummy tasks.
-    """
-    try:
-        # Verify user has access to project
-        user_id = ObjectId(current_user["id"])
-        await verify_user_access_to_project(user_id, ObjectId(project_id))
+# @router.post("/generate-dummy-tasks")
+# async def generate_dummy_tasks(
+#     project_id: str,
+#     board_id: str,
+#     num_tasks: int = 10,
+#     current_user: str = Depends(get_current_user)
+# ):
+#     """
+#     Generate dummy tasks for testing.
+#     All project members can generate dummy tasks.
+#     """
+#     try:
+#         # Verify user has access to project
+#         user_id = ObjectId(current_user["id"])
+#         await verify_user_access_to_project(user_id, ObjectId(project_id))
 
-        result = await TaskService.generate_tasks_for_board(
-            project_id,
-            board_id,
-            num_tasks,
-            user_id
-        )
-        return {
-            "message": "Dummy tasks generated successfully",
-            "task_ids": [str(task_id) for task_id in result]
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error generating dummy tasks: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+#         result = await TaskService.generate_tasks_for_board(
+#             project_id,
+#             board_id,
+#             num_tasks,
+#             user_id
+#         )
+#         return {
+#             "message": "Dummy tasks generated successfully",
+#             "task_ids": [str(task_id) for task_id in result]
+#         }
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         logger.error(f"Error generating dummy tasks: {e}")
+#         raise HTTPException(status_code=500, detail="Internal Server Error")

@@ -34,18 +34,24 @@ class TaskService:
                 if not board:
                     raise HTTPException(
                         status_code=404, detail="Board not found")
-
-                # Validate column_id exists in board
-                if task_data.column_id:
-                    column_ids = [col["id"] for col in board["columns"]]
-                    if task_data.column_id not in column_ids:
-                        raise HTTPException(
-                            status_code=400,
-                            detail="Invalid column_id for this board"
-                        )
-                else:
-                    # Default to first column if no column_id specified
-                    task_data.column_id = board["columns"][0]["id"] if board["columns"] else "todo"
+            else:
+                board = await db["boards"].find_one({"project_id": project_id})
+                if not board:
+                    raise HTTPException(
+                        status_code=404, detail="No board found for this project")
+                task_data.board_id = str(board["_id"])
+                
+            # Validate column_id exists in board
+            if task_data.column_id:
+                column_ids = [col["id"] for col in board["columns"]]
+                if task_data.column_id not in column_ids:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Invalid column_id for this board"
+                    )
+            else:
+                # Default to first column if no column_id specified
+                task_data.column_id = board["columns"][0]["id"] if board["columns"] else "todo"
 
             # Get next position for the task in the specified column
             position = await TaskService._get_next_position(
@@ -540,19 +546,19 @@ class TaskService:
             logger.error(f"Failed to log activity: {str(e)}")
             # Don't raise exception for logging failures
 
-    # Generate dummy tasks method (existing)
-    @staticmethod
-    async def generate_tasks_for_board(project_id: str, board_id: str, num_tasks: int = 10, creator_id: str = None):
-        """
-        Generate dummy tasks for a board and insert them into the database.
-        """
-        from app.services.llm_generator import generate_dummy_tasks
+    # # Generate dummy tasks method (existing)
+    # @staticmethod
+    # async def generate_tasks_for_board(project_id: str, board_id: str, num_tasks: int = 10, creator_id: str = None):
+    #     """
+    #     Generate dummy tasks for a board and insert them into the database.
+    #     """
+    #     from app.services.llm_generator import generate_dummy_tasks
 
-        dummy_tasks = generate_dummy_tasks(project_id, board_id, num_tasks)
-        # Set creator_id if provided
-        if creator_id:
-            for t in dummy_tasks:
-                t["creator_id"] = ObjectId(creator_id)
-        # Insert to database
-        result = await db["tasks"].insert_many(dummy_tasks)
-        return result.inserted_ids
+    #     dummy_tasks = generate_dummy_tasks(project_id, board_id, num_tasks)
+    #     # Set creator_id if provided
+    #     if creator_id:
+    #         for t in dummy_tasks:
+    #             t["creator_id"] = ObjectId(creator_id)
+    #     # Insert to database
+    #     result = await db["tasks"].insert_many(dummy_tasks)
+    #     return result.inserted_ids

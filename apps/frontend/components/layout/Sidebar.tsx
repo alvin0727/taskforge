@@ -10,7 +10,7 @@ import {
   Home,
   Kanban,
   Users,
-  Calendar,
+  ListTodo,
   BarChart3,
   Plus,
   Search,
@@ -22,6 +22,7 @@ import {
 import { useOrganizationStore } from "@/stores/organizationStore";
 import organizationService from "@/services/organization/organizationService";
 import projectService from "@/services/projects/projectService";
+import taskService from "@/services/task/taskService";
 import userService from "@/services/users/userService";
 import { useUserStore } from "@/stores/userStore";
 import { useSidebarStore } from "@/stores/sidebarStore";
@@ -34,16 +35,19 @@ import FavoritesList from "../ui/sidebar/FavoritesList";
 import UserProfileMenu from "../ui/sidebar/UserProfileMenu";
 import SidebarNavLinks from "../ui/sidebar/SidebarNavLinks";
 import ProjectForm from "@/components/ui/project/ProjectForm";
+import TaskFormDashboard from "@/components/ui/task/TaskFormDashboard";
 import Footer from "./Footer";
 import toast from "react-hot-toast";
+import { RequestTaskCreate } from "@/lib/types/task";
+import { useTaskStore } from "@/stores/taskStore";
 
 const navLinks = [
   { name: "Dashboard", href: "/dashboard", icon: Home, iconColor: "text-blue-400" },
   { name: "Project", href: "/project", icon: FolderKanban, iconColor: "text-purple-400" },
   { name: "Board", href: "/organization/board", icon: Kanban, iconColor: "text-purple-400" },
   { name: "Team", href: "/team", icon: Users, iconColor: "text-pink-400" },
-  { name: "Calendar", href: "/protected/calendar", icon: Calendar, iconColor: "text-red-400" },
-  { name: "Activity", href: "/protected/activity", icon: BarChart3, iconColor: "text-cyan-400" },
+  { name: "Task", href: "/organization/task", icon: ListTodo, iconColor: "text-red-400" },
+  { name: "Activity", href: "/organization/activity", icon: BarChart3, iconColor: "text-cyan-400" },
 ];
 
 const quickActions = [
@@ -76,6 +80,10 @@ export default function Sidebar() {
   const setProjects = useProjectStore((state) => state.setProjects);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectFormLoading, setProjectFormLoading] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskFormLoading, setTaskFormLoading] = useState(false);
+  const { setTasks } = useTaskStore();
+
   const [logoutLoading, setLogoutLoading] = useState(false);
 
   useEffect(() => {
@@ -228,11 +236,42 @@ export default function Sidebar() {
     setProjectFormLoading(true);
     try {
       const result = await projectService.createNewProject(data);
-      setProjectFormLoading(false);
       return result.project; // Return the created project
     } catch (err) {
-      setProjectFormLoading(false);
       throw err;
+    } finally {
+      setProjectFormLoading(false);
+    }
+  };
+
+  // Handler submit task
+  const handleCreateTask = async (data: RequestTaskCreate) => {
+    setTaskFormLoading(true);
+    try {
+      const payload: RequestTaskCreate = {
+        ...data,
+      };
+      const response = await taskService.createNewTask(payload);
+      const newTask = response.task;
+
+      if (!newTask) {
+        throw new Error("Failed to create task");
+      }
+      console.log("New task created:", newTask);
+
+      const existingTasks = useTaskStore.getState().tasks;
+      const hasSameBoard = existingTasks.some(t => t.board_id === newTask.board_id);
+
+      if (hasSameBoard) {
+        setTasks([...existingTasks, newTask]);
+      }
+
+      toast.success("Task created successfully");
+      setShowTaskForm(false);
+    } catch (err) {
+      toast.error("Failed to create task");
+    } finally {
+      setTaskFormLoading(false);
     }
   };
 
@@ -351,7 +390,7 @@ export default function Sidebar() {
                 <button
                   key={action.name}
                   className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 justify-center"
-                  onClick={action.action === "create-project" ? () => setShowProjectForm(true) : handleNavClick}
+                  onClick={action.action === "create-project" ? () => setShowProjectForm(true) : () => setShowTaskForm(true)}
                 >
                   <action.icon size={16} />
                   {action.name}
@@ -406,7 +445,7 @@ export default function Sidebar() {
             toggleAvatarMenu={toggleAvatarMenu}
             handleNavClick={handleNavClick}
             onLogout={handleLogout}
-            logoutLoading={logoutLoading} 
+            logoutLoading={logoutLoading}
           />
         )}
       </aside>
@@ -419,6 +458,17 @@ export default function Sidebar() {
           onSubmit={handleCreateProject}
           loading={projectFormLoading}
           onClose={() => setShowProjectForm(false)}
+        />
+      )}
+
+      {/* Modal TaskForm */}
+      {showTaskForm && (
+        <TaskFormDashboard
+          onSubmit={handleCreateTask}
+          loading={taskFormLoading}
+          onClose={() => {
+            setShowTaskForm(false);
+          }}
         />
       )}
     </>
