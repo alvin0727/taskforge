@@ -544,29 +544,28 @@ class DashboardService:
             # Get organization to get member count
             org = await db["organizations"].find_one({"_id": org_object_id})
             if not org:
-                return {"team_members": 0, "online_members": 0}
+                return {"team_members": 0, "active_members": 0}
 
             members = org.get("members", [])
             total_members = len(members)
 
-            # For now, simulate online members (you can implement real-time tracking later)
-            # This could be based on recent login activity
-            online_members = 0
+            # Active members: logged in within last 7 days (more realistic than 24h)
+            active_members = 0
             if members:
-                recent_activity_threshold = datetime.utcnow() - timedelta(hours=24)
-                online_members = await db["users"].count_documents({
+                week_ago = datetime.utcnow() - timedelta(days=7)
+                active_members = await db["users"].count_documents({
                     "_id": {"$in": members},
-                    "last_login": {"$gte": recent_activity_threshold}
+                    "last_login": {"$gte": week_ago}
                 })
 
             return {
                 "team_members": total_members,
-                "online_members": online_members
+                "active_members": active_members
             }
 
         except Exception as e:
             logger.error(f"Failed to get team stats: {str(e)}")
-            return {"team_members": 0, "online_members": 0}
+            return {"team_members": 0, "active_members": 0}
 
     @staticmethod
     async def _get_organization_project_ids(organization_id: str) -> List[ObjectId]:

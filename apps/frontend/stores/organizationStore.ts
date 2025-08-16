@@ -1,19 +1,5 @@
-import { OrganizationMember } from "@/lib/types/organization";
+import { OrganizationMember, Organization } from "@/lib/types/organization";
 import { create } from "zustand";
-
-export type Organization = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  logo_url: string | null;
-  type: string;
-  role: string;
-  joined_at: string;
-  is_active: boolean;
-  members_count: number;
-  is_owner: boolean;
-};
 
 type OrganizationStore = {
   organizations: Organization[];

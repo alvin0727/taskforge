@@ -17,8 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Archive,
-  Star,
-  Clock,
   Target,
 } from "lucide-react";
 import { useOrganizationStore } from "@/stores/organizationStore";
@@ -254,9 +252,9 @@ export default function Sidebar() {
         {/* Mobile org indicator */}
         <div className="flex items-center gap-2 text-neutral-400 text-sm">
           <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">
-            {activeOrg?.name ? activeOrg.name[0] : "O"}
+            {user?.name ? user.name[0] : "O"}
           </div>
-          <span className="truncate max-w-32">{activeOrg?.name || "Organization"}</span>
+          <span className="truncate max-w-32">{user?.name || "Organization"}</span>
         </div>
       </div>
 

@@ -383,6 +383,13 @@ class UserService:
                         }
                     )
 
+            # ✅ ADD THIS: Update last_login when OTP verification is successful
+            now = datetime.utcnow()
+            await db["users"].update_one(
+                {"_id": user["_id"]},
+                {"$set": {"last_login": now, "updated_at": now}}
+            )
+
             # If OTP is valid, reset attempts and remove the token
             await db["verification_tokens"].delete_one({"_id": verification_token["_id"]})
 
@@ -415,7 +422,7 @@ class UserService:
                 profile=profile,
                 is_active=user.get("is_active", True),
                 created_at=user.get("created_at"),
-                last_login=user.get("last_login"),
+                last_login=now,  # ✅ Return updated last_login
             )
             return {
                 "message": "Login successful",

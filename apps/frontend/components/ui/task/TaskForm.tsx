@@ -6,7 +6,7 @@ import { Plus, Calendar, User, Clock, Tag, X, ChevronDown, Signal, SignalHigh, S
 import { useSidebarStore } from "@/stores/sidebarStore";
 import LoadingButton from "@/components/ui/loading/LoadingButton";
 import DatePicker from "react-datepicker";
-import { useTeamMembers, getAssigneeAvatar } from '../team/TeamUtils';
+import { useProjectTeamMembers, getAssigneeAvatar } from '../team/TeamUtils';
 import "react-datepicker/dist/react-datepicker.css";
 
 interface TaskFormProps {
@@ -42,7 +42,7 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
   const [showEstimatedHoursInput, setShowEstimatedHoursInput] = useState(false);
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const teamMembers = useTeamMembers();
+  const teamMembers = useProjectTeamMembers(defaultValues?.project_id);
 
   const priorityRef = useRef<HTMLDivElement>(null);
   const dueDateRef = useRef<HTMLDivElement>(null);
@@ -630,8 +630,8 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                             className="w-full flex items-center px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700/50 rounded-md transition-colors"
                           >
                             <div className={`w-3 h-3 rounded-full mr-2 ${label.name === 'Bug' ? 'bg-red-500' :
-                                label.name === 'Feature' ? 'bg-purple-500' :
-                                  'bg-blue-500'
+                              label.name === 'Feature' ? 'bg-purple-500' :
+                                'bg-blue-500'
                               }`}></div>
                             <span>{label.name}</span>
                             {selectedLabels.includes(label.name) && (
@@ -650,8 +650,8 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                             className="w-full flex items-center px-2 py-1.5 text-sm text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700/50 rounded-md transition-colors"
                           >
                             <div className={`w-3 h-3 rounded-full mr-2 ${label.name === 'KnowledgeBase' ? 'bg-green-500' :
-                                label.name === 'Documentation' ? 'bg-yellow-500' :
-                                  'bg-orange-500'
+                              label.name === 'Documentation' ? 'bg-yellow-500' :
+                                'bg-orange-500'
                               }`}></div>
                             <span>{label.name}</span>
                             {selectedLabels.includes(label.name) && (
@@ -678,11 +678,11 @@ export default function TaskForm({ onSubmit, loading, onClose, defaultValues }: 
                     >
                       <div className="flex items-center gap-1.5">
                         <div className={`w-2 h-2 rounded-full ${labelName === 'Bug' ? 'bg-red-500' :
-                            labelName === 'Feature' ? 'bg-purple-500' :
-                              labelName === 'Improvement' ? 'bg-blue-500' :
-                                labelName === 'KnowledgeBase' ? 'bg-green-500' :
-                                  labelName === 'Documentation' ? 'bg-yellow-500' :
-                                    'bg-orange-500'
+                          labelName === 'Feature' ? 'bg-purple-500' :
+                            labelName === 'Improvement' ? 'bg-blue-500' :
+                              labelName === 'KnowledgeBase' ? 'bg-green-500' :
+                                labelName === 'Documentation' ? 'bg-yellow-500' :
+                                  'bg-orange-500'
                           }`}></div>
                         {labelName}
                       </div>
