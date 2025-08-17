@@ -8,9 +8,8 @@ from app.db.enums import UserRole
 from app.db.enums import InvitationStatus
 import app.lib.request.organization_request as org_req
 from app.utils.permissions import verify_user_access_to_organization
-
 from app.db.database import get_db
-from app.utils.logger import logger
+from app.services.activity_service import ActivityService
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 db = get_db()
@@ -243,6 +242,35 @@ async def search_organization_tasks(
         status=request.status,
         priority=request.priority,
         assignee_id=assignee_obj_id
+    )
+    
+    return result
+
+
+@router.post("/{org_id}/activities")
+async def get_organization_activities(
+    org_id: str,
+    request: org_req.GetOrganizationActivitiesRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all activities in organization with filtering and pagination (POST method for complex filters)"""
+    user_id = ObjectId(current_user["id"])
+    organization_id = ObjectId(org_id)
+    
+    # Convert project_id and user_filter_id to ObjectId if provided
+    project_obj_id = ObjectId(request.project_id) if request.project_id else None
+    user_filter_obj_id = ObjectId(request.user_id) if request.user_id else None
+    
+    result = await ActivityService.get_organization_activities(
+        user_id=user_id,
+        organization_id=organization_id,
+        limit=request.limit,
+        offset=request.offset,
+        search=request.search,
+        project_id=project_obj_id,
+        date_from=request.date_from,
+        date_to=request.date_to,
+        user_filter_id=user_filter_obj_id
     )
     
     return result

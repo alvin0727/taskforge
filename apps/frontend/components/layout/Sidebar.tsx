@@ -323,7 +323,7 @@ export default function Sidebar() {
         {/* Hide/Show Sidebar Button (desktop only) */}
         <div className="flex items-center justify-between p-4 border-b border-neutral-800">
           <Link
-            href="/"
+            href={user ? "/dashboard" : "/"}
             className="flex items-center gap-2 font-bold text-xl text-blue-400 hover:text-blue-300 transition-colors"
             onClick={handleNavClick}
           >

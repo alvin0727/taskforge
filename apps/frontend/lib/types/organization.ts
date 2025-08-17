@@ -65,3 +65,28 @@ export interface GetOrganizationTasksResponse {
   offset: number;
   has_more: boolean;
 }
+
+export interface OrganizationActivity {
+  id: string;
+  user: string;
+  avatar: string;
+  item: string;
+  created_at: string;
+}
+
+export interface GetOrganizationActivitiesResponse {
+  activities: OrganizationActivity[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+}
+
+export interface GetOrganizationActivitiesRequest {
+  limit?: number;
+  offset?: number;
+  project_id?: string;
+  user_id?: string;
+  date_from?: string;
+  date_to?: string;
+}

@@ -456,7 +456,7 @@ function DashboardInner() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-neutral-300">
                           <span className="font-medium text-white">{activity.user}</span>
-                          {' '}{activity.action}{' '}
+                          {' '}
                           <span className="font-medium">{activity.item}</span>
                         </p>
                         <p className="text-neutral-500 text-xs mt-1">{activity.time}</p>

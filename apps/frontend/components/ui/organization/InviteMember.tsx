@@ -70,7 +70,7 @@ export default function InviteMemberModal({ isOpen, onClose, onInvite }: {
             onClick={onClose}
         >
             {/* Mobile: Full height on small screens, centered on larger screens */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-md overflow-hidden flex flex-col 
+            <div onClick={e => e.stopPropagation()} className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-md overflow-hidden flex flex-col 
                            min-h-[50vh] sm:min-h-0 max-h-[90vh] sm:max-h-none">
 
                 {/* Header - Enhanced touch targets for mobile */}
