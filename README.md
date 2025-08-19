@@ -29,10 +29,6 @@ Try TaskForge live: [https://www.taskforgealvin.fun/](https://www.taskforgealvin
 2. Follow the setup instructions for your environment (see the documentation folder for details).
 3. Run the application and start managing your tasks efficiently!
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
 ---
 
 Empower your productivity and streamline your workflow with TaskForge!
