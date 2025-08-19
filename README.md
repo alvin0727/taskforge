@@ -1,23 +1,38 @@
 # TaskForge
 
-| Sprint       | Goals                                                                 | Tools / Notes                                      |
-| ------------ | --------------------------------------------------------------------- | -------------------------------------------------- |
-| **Sprint 1** | ✅ Setup project monorepo (frontend, backend, shared lib), Docker for MongoDB | Next.js, FastAPI, MongoDB (Docker Compose)         |
-| **Sprint 2** | 🔁 Prompt → LLM → Task Tree (JSON), basic schema & backend endpoint   | GPT-4 API / placeholder, FastAPI                   |
-| **Sprint 3** | 🖼️ Display task tree in UI, initial drag & drop board                 | Next.js, Zustand/Redux, Tailwind, dnd-kit          |
-| **Sprint 4** | 🔁 WebSocket for board sync, real-time multi-user                     | FastAPI WebSockets or Socket.IO                    |
-| **Sprint 5** | 🔗 Task dependency logic (graph), validate task start order           | `networkx` or custom logic                         |
-| **Sprint 6** | ⏳ Time estimator (LLM), assign user logic, effort estimation          | GPT-4 API, add `estimated_time`, `assignee` fields |
-| **Sprint 7** | 💾 Export board to Trello/Notion, save version snapshots              | Trello API, Notion API, versioning in MongoDB      |
-| **Sprint 8** | 🔐 Auth (email login, session), polish UI/UX, deploy to Railway/Vercel| Auth.js (NextAuth), Tailwind polish                |
-| **Sprint 9** | 🧠 Prompt tuning (few-shot), improve task quality, custom model option| GPT-4 Turbo or fine-tuned LLaMA (optional)         |
+TaskForge is a project management and productivity tool designed to help individuals and teams organize, track, and optimize their workflows. Built primarily with TypeScript and Python, TaskForge offers a seamless and efficient environment for managing tasks, deadlines, and collaboration.
 
-### Sprint 1 Checklist
+## Features
 
-| No. | Task Area         | Description                                         | Status |
-|-----|-------------------|-----------------------------------------------------|--------|
-| 1   | Project Structure | Create folder structure: `backend/`, `frontend/`, `shared/` | ✅      |
-| 2   | MongoDB Docker    | Set up `docker-compose.yml` and run MongoDB         | ✅      |
-| 3   | Backend Setup     | Initialize FastAPI and create `/ping` endpoint      | ✅      |
-| 4   | Frontend Setup    | Initialize Next.js and install Tailwind CSS         | ✅      |
-| 5   | GitHub            | Initialize Git repo and push to GitHub              | ✅      |
+- **Task Management**: Easily create, assign, and prioritize tasks.
+- **Collaboration**: Work together with your team, share updates, and communicate progress.
+- **AI-Powered Descriptions**: Generate smart and context-aware task descriptions using integrated Large Language Model (LLM) AI.
+- **Custom Workflows**: Adapt TaskForge to fit your unique processes and project requirements.
+- **Progress Tracking**: Monitor the status of tasks and projects in real time.
+- **Cross-platform Support**: Accessible from multiple devices and platforms.
+
+## Technologies Used
+
+- **TypeScript**: Robust and scalable frontend and backend structure.
+- **Python (FastAPI)**: High-performance backend API built with FastAPI.
+- **MongoDB**: NoSQL database for flexible and efficient data storage.
+- **AI LLM Integration**: Automatically generate intelligent task and project descriptions.
+
+## Demo
+
+Try TaskForge live: [https://www.taskforgealvin.fun/](https://www.taskforgealvin.fun/)
+
+## Getting Started
+
+1. Clone the repository:  
+   `git clone https://github.com/alvin0727/taskforge.git`
+2. Follow the setup instructions for your environment (see the documentation folder for details).
+3. Run the application and start managing your tasks efficiently!
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+Empower your productivity and streamline your workflow with TaskForge!
